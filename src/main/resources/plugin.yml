@@ -1,0 +1,29 @@
+
+name: BattleRoyale
+version: 1.0
+main: com.example.battleroyale.BattleRoyale
+api-version: 1.20
+commands:
+  br:
+    description: BattleRoyale command.
+    usage: /br [startdefault|startim] [size]
+  chd:
+    description: Alias for /setblock ~ ~ ~ tacz:gun_smith_table
+  총:
+    description: Alias for /setblock ~ ~ ~ tacz:gun_smith_table
+  기본템설정:
+    description: Set default items.
+  기본템:
+    description: Get default items.
+  rlqhsxpa:
+    description: Alias for 기본템
+  teamtest:
+    description: Test team functionality.
+  팀가르기:
+    description: Split players into teams.
+  팀참여:
+    description: Join a team.
+  suplytest:
+    description: Test supply drop functionality.
+  밥:
+    description: Get bread.
