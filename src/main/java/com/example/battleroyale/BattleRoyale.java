@@ -53,12 +53,12 @@ public final class BattleRoyale extends JavaPlugin {
         } else if (command.getName().equalsIgnoreCase("chd")) {
             if (sender instanceof Player) {
                 Player player = (Player) sender;
-                player.performCommand("setblock ~ ~ ~ tacz:gun_smith_table");
+                player.performCommand("give @p tacz:gun_smith_table");
             }
         } else if (command.getName().equalsIgnoreCase("총")) {
             if (sender instanceof Player) {
                 Player player = (Player) sender;
-                player.performCommand("setblock ~ ~ ~ tacz:gun_smith_table");
+                player.performCommand("give @p tacz:gun_smith_table");
             }
         } else if (command.getName().equalsIgnoreCase("기본템설정")) {
             // Handle 기본템설정 command
