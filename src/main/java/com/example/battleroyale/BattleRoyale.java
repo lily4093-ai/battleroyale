@@ -1,14 +1,22 @@
 
 package com.example.battleroyale;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
-public final class BattleRoyale extends JavaPlugin {
+import java.util.ArrayList;
+import java.util.List;
+
+public final class BattleRoyale extends JavaPlugin implements Listener {
 
     private GameManager gameManager;
     private BorderManager borderManager;
@@ -20,7 +28,7 @@ public final class BattleRoyale extends JavaPlugin {
     public void onEnable() {
         // Plugin startup logic
         borderManager = new BorderManager();
-        teamManager = new TeamManager();
+        teamManager = new TeamManager(borderManager);
         utilManager = new UtilManager(this, borderManager);
         gameManager = new GameManager(this, borderManager, teamManager);
         Bukkit.getPluginManager().registerEvents(this, this);
@@ -106,7 +114,7 @@ public final class BattleRoyale extends JavaPlugin {
             return true;
         } else if (command.getName().equalsIgnoreCase("suplytest")) {
             player.sendMessage("§6[배틀로얄] §f보급을 소환합니다.");
-            utilManager.spawnSupplyDrop(player.getLocation());
+            utilManager.spawnSupplyDrop();
             return true;
         } else if (command.getName().equalsIgnoreCase("밥")) {
             player.sendMessage("§6[배틀로얄] §f빵 64개를 지급합니다.");

@@ -1,3 +1,4 @@
+package com.example.battleroyale;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -10,6 +11,7 @@ import java.util.Random;
 public class BorderManager {
 
     private WorldBorder border;
+    private World world; // Added this line
     private double[] borderSizes = {2500, 2000, 1500, 1000, 500, 100, 10, 0};
     private double currentSize;
     private double borderCenterX;
@@ -20,7 +22,7 @@ public class BorderManager {
     private double borderSpeed = 1000.0; // Initial speed, will be updated
 
     public BorderManager() {
-        World world = Bukkit.getWorlds().get(0);
+        this.world = Bukkit.getWorlds().get(0); // Modified this line
         this.border = world.getWorldBorder();
     }
 
@@ -89,7 +91,7 @@ public class BorderManager {
         double randomX = xMinBound + (xMaxBound - xMinBound) * random.nextDouble();
         double randomZ = zMinBound + (zMaxBound - zMinBound) * random.nextDouble();
 
-        return new Location(border.getWorld(), randomX, 0, randomZ);
+        return new Location(world, randomX, 0, randomZ);
     }
 
     public boolean brIsinnextborder(double x, double z, int phase) {
@@ -99,6 +101,33 @@ public class BorderManager {
 
         return x >= (centerX - newSize / 2) && x <= (centerX + newSize / 2) &&
                z >= (centerZ - newSize / 2) && z <= (centerZ + newSize / 2);
+    }
+
+    public Location brGetspawnloc(String type) {
+        double space = 500; // 끝점에서 얼마나 여유를 두고 스폰시킬건지
+        double x = 0;
+        double z = 0;
+
+        if (type.equals("++")) {
+            x = borderCenterX + (currentSize / 2) - space;
+            z = borderCenterZ + (currentSize / 2) - space;
+        } else if (type.equals("--")) {
+            x = borderCenterX - (currentSize / 2) + space;
+            z = borderCenterZ - (currentSize / 2) + space;
+        } else if (type.equals("+-")) {
+            x = borderCenterX + (currentSize / 2) - space;
+            z = borderCenterZ - (currentSize / 2) + space;
+        } else if (type.equals("-+")) {
+            x = borderCenterX - (currentSize / 2) + space;
+            z = borderCenterZ + (currentSize / 2) - space;
+        }
+
+        Location tempLoc = new Location(world, x, 256, z);
+        while (tempLoc.getBlock().getType().isAir() && tempLoc.getY() > 0) {
+            tempLoc.subtract(0, 1, 0);
+        }
+        tempLoc.add(0, 1, 0);
+        return tempLoc;
     }
 
     public WorldBorder getBorder() {
@@ -114,7 +143,7 @@ public class BorderManager {
     }
 
     public Location getNextBorderCenter() {
-        return new Location(border.getWorld(), nextBorderCenterX, 0, nextBorderCenterZ);
+        return new Location(this.world, nextBorderCenterX, 0, nextBorderCenterZ);
     }
 
     public boolean isShrinking() {

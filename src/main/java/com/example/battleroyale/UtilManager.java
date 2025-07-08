@@ -110,10 +110,10 @@ public class UtilManager implements Listener {
             event.setCancelled(true);
             event.getBlock().setType(Material.AIR);
             event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.IRON_INGOT, new Random().nextInt(5) + 1));
-        } else if (blockType == Material.GOLD_ORE || blockType == Material.DEEPSLATE_GOLD_ORE) {
+        } else if (blockType == Material.DEEPSLATE_IRON_ORE) {
             event.setCancelled(true);
             event.getBlock().setType(Material.AIR);
-            event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.GOLD_INGOT, new Random().nextInt(5) + 1));
+            event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.IRON_INGOT, new Random().nextInt(5) + 1));
         } else if (blockType == Material.COPPER_ORE || blockType == Material.DEEPSLATE_COPPER_ORE) {
             event.setCancelled(true);
             event.getBlock().setType(Material.AIR);

@@ -2,20 +2,26 @@
 package com.example.battleroyale;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class TeamManager {
 
     private Scoreboard scoreboard;
+    private BorderManager borderManager;
+    private Map<Player, Integer> playerTeams = new HashMap<>();
 
-    public TeamManager() {
+    public TeamManager(BorderManager borderManager) {
         this.scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+        this.borderManager = borderManager;
     }
 
     public void splitTeam(int size) {

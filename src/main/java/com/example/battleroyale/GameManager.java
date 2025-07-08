@@ -29,7 +29,7 @@ public class GameManager {
             @Override
             public void run() {
                 if (!isIngame || phase >= 7) {
-                    cancel();
+                    this.cancel();
                     return;
                 }
 
@@ -85,35 +85,35 @@ public class GameManager {
         this.gametime += amount;
     }
 
-    public void setIngame(boolean ingame) {
+    public static void setIngame(boolean ingame) {
         isIngame = ingame;
     }
 
-    public boolean isIngame() {
+    public static boolean isIngame() {
         return isIngame;
     }
 
-    public void setGametime(int gametime) {
-        this.gametime = gametime;
+    public static void setGametime(int gametime) {
+        GameManager.gametime = gametime;
     }
 
-    public int getGametime() {
+    public static int getGametime() {
         return gametime;
     }
 
-    public void setPhase(int phase) {
-        this.phase = phase;
+    public static void setPhase(int phase) {
+        GameManager.phase = phase;
     }
 
-    public int getPhase() {
+    public static int getPhase() {
         return phase;
     }
 
-    public void setDelay(int delay) {
-        this.delay = delay;
+    public static void setDelay(int delay) {
+        GameManager.delay = delay;
     }
 
-    public int getDelay() {
+    public static int getDelay() {
         return delay;
     }
 }
