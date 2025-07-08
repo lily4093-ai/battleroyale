@@ -19,6 +19,20 @@ public class TeamManager {
     }
 
     public void splitTeam(int size) {
+        // Clear existing teams
+        for (String entry : scoreboard.getEntries()) {
+            Team team = scoreboard.getEntryTeam(entry);
+            if (team != null && team.getName().startsWith("team")) {
+                team.removeEntry(entry);
+            }
+        }
+        for (Team team : scoreboard.getTeams()) {
+            if (team.getName().startsWith("team")) {
+                team.unregister();
+            }
+        }
+        playerTeams.clear();
+
         List<Player> players = new ArrayList<>(Bukkit.getOnlinePlayers());
         Collections.shuffle(players);
 
@@ -27,6 +41,7 @@ public class TeamManager {
             Team team = scoreboard.getTeam(teamName);
             if (team == null) {
                 team = scoreboard.registerNewTeam(teamName);
+                team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.FOR_OTHER_TEAMS);
             }
         }
 
@@ -36,8 +51,77 @@ public class TeamManager {
             Team team = scoreboard.getTeam(teamName);
             if (team != null) {
                 team.addEntry(player.getName());
+                playerTeams.put(player, (playerIndex % size) + 1);
+                player.sendMessage("§6[배틀로얄] §f당신은 §c" + ((playerIndex % size) + 1) + " §f팀 입니다!");
             }
             playerIndex++;
         }
+
+        for (int i = 0; i < size; i++) {
+            String teamName = "team" + (i + 1);
+            Team team = scoreboard.getTeam(teamName);
+            if (team != null) {
+                StringBuilder teamMembers = new StringBuilder();
+                for (String entry : team.getEntries()) {
+                    if (teamMembers.length() > 0) {
+                        teamMembers.append(", ");
+                    }
+                    teamMembers.append(entry);
+                }
+                Bukkit.broadcastMessage("§6[배틀로얄] §f" + (i + 1) + " 팀 - " + teamMembers.toString());
+            }
+        }
+        teamTP(size);
+    }
+
+    public void teamTP(int size) {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            player.setLevel(180); // Skript's xp add @a 180 levels
+            Integer teamNumber = playerTeams.get(player);
+            if (teamNumber != null) {
+                Location spawnLoc = null;
+                switch (teamNumber) {
+                    case 1:
+                        spawnLoc = borderManager.brGetspawnloc("++");
+                        break;
+                    case 2:
+                        spawnLoc = borderManager.brGetspawnloc("--");
+                        break;
+                    case 3:
+                        spawnLoc = borderManager.brGetspawnloc("+-");
+                        break;
+                    case 4:
+                        spawnLoc = borderManager.brGetspawnloc("-+");
+                        break;
+                    default:
+                        // Handle more than 4 teams or other cases
+                        // For now, just use a default spawn if team number is > 4
+                        spawnLoc = borderManager.brGetspawnloc("++");
+                        break;
+                }
+                if (spawnLoc != null) {
+                    player.teleport(spawnLoc);
+                }
+            }
+        }
+    }
+
+    public void joinTeam(Player player, int teamNumber) {
+        // Remove from existing team if any
+        for (Team team : scoreboard.getTeams()) {
+            if (team.hasEntry(player.getName())) {
+                team.removeEntry(player.getName());
+            }
+        }
+
+        // Add to new team
+        String teamName = "team" + teamNumber;
+        Team team = scoreboard.getTeam(teamName);
+        if (team == null) {
+            team = scoreboard.registerNewTeam(teamName);
+            team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.FOR_OTHER_TEAMS);
+        }
+        team.addEntry(player.getName());
+        playerTeams.put(player, teamNumber);
     }
 }
