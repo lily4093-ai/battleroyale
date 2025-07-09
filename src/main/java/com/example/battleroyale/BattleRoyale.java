@@ -5,16 +5,28 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.Material;
+import org.bukkit.enchantments.Enchantment;
+import org.bukkit.boss.BossBar;
+import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarStyle;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public final class BattleRoyale extends JavaPlugin implements Listener {
 
@@ -23,6 +35,7 @@ public final class BattleRoyale extends JavaPlugin implements Listener {
     private TeamManager teamManager;
     private UtilManager utilManager;
     private List<ItemStack> defaultItems = new ArrayList<>();
+    private Random random = new Random();
 
     @Override
     public void onEnable() {
@@ -32,6 +45,18 @@ public final class BattleRoyale extends JavaPlugin implements Listener {
         utilManager = new UtilManager(this, borderManager);
         gameManager = new GameManager(this, borderManager, teamManager);
         Bukkit.getPluginManager().registerEvents(this, this);
+
+        // Initialize default items
+        ItemStack pickaxe = new ItemStack(Material.DIAMOND_PICKAXE);
+        ItemMeta pickaxeMeta = pickaxe.getItemMeta();
+        pickaxeMeta.addEnchant(Enchantment.DIG_SPEED, 3, true);
+        pickaxeMeta.addEnchant(Enchantment.DURABILITY, 3, true);
+        pickaxe.setItemMeta(pickaxeMeta);
+        defaultItems.add(pickaxe);
+        defaultItems.add(new ItemStack(Material.BREAD, 64));
+        defaultItems.add(new ItemStack(Material.ENCHANTING_TABLE, 1));
+        defaultItems.add(new ItemStack(Material.BOOKSHELF, 64));
+
     }
 
     @Override
@@ -46,6 +71,14 @@ public final class BattleRoyale extends JavaPlugin implements Listener {
             return true;
         }
         Player player = (Player) sender;
+
+        // Commands that are allowed for non-OPs
+        List<String> allowedCommands = List.of("총", "chd", "빵", "기본탬");
+
+        if (!allowedCommands.contains(command.getName().toLowerCase()) && !player.isOp()) {
+            player.sendMessage("§c이 명령어는 OP만 사용할 수 있습니다.");
+            return true;
+        }
 
         if (command.getName().equalsIgnoreCase("br")) {
             if (args.length > 1) {
@@ -120,6 +153,14 @@ public final class BattleRoyale extends JavaPlugin implements Listener {
             player.sendMessage("§6[배틀로얄] §f빵 64개를 지급합니다.");
             player.getInventory().addItem(new ItemStack(Material.BREAD, 64));
             return true;
+        } else if (command.getName().equalsIgnoreCase("강제종료")) {
+            if (player.isOp()) {
+                player.sendMessage("§c서버를 강제 종료합니다...");
+                Bukkit.shutdown();
+            } else {
+                player.sendMessage("§c이 명령어는 OP만 사용할 수 있습니다.");
+            }
+            return true;
         }
         return false;
     }
@@ -135,5 +176,34 @@ public final class BattleRoyale extends JavaPlugin implements Listener {
             }
             event.getPlayer().sendMessage("§6[배틀로얄] §f기본템 설정이 저장되었습니다.");
         }
+    }
+
+    @EventHandler
+    public void onEntityDeath(EntityDeathEvent event) {
+        if (event.getEntity() instanceof LivingEntity && !(event.getEntity() instanceof Player)) {
+            int gunpowderAmount = random.nextInt(5); // 0-4
+            if (gunpowderAmount > 0) {
+                event.getEntity().getWorld().dropItemNaturally(event.getEntity().getLocation(), new ItemStack(Material.GUNPOWDER, gunpowderAmount));
+            }
+        }
+    }
+
+    @EventHandler
+    public void onBlockBreak(BlockBreakEvent event) {
+        if (event.getBlock().getType() == Material.GLASS || event.getBlock().getType() == Material.GLASS_PANE) {
+            if (random.nextInt(100) < 20) { // 20% chance
+                event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.AMETHYST_SHARD, 1));
+            }
+        }
+    }
+
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        borderManager.getBossBar().addPlayer(event.getPlayer());
+    }
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        borderManager.getBossBar().removePlayer(event.getPlayer());
     }
 }
