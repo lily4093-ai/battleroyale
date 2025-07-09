@@ -93,11 +93,13 @@ public class BorderManager {
                 }
                 
                 // 액션바 업데이트
-                String actionBar = String.format("§7자기장 크기: §c%.0f §7> §c%.0f §f| §7자기장 축소 진행률: §c%.0f%% §f| §7자기장 중앙: §c( %.0f, %.0f )", 
-                    prevSize, currentSize, perc, xLoc2, zLoc2);
-                Bukkit.getOnlinePlayers().forEach(player -> {
-                    player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(actionBar));
-                });
+                if (loopNumber % 10 == 0) {
+                    String actionBar = String.format("§7자기장 크기: §c%.0f §7> §c%.0f §f| §7자기장 축소 진행률: §c%.0f%% §f| §7자기장 중앙: §c( %.0f, %.0f )", 
+                        prevSize, currentSize, perc, xLoc2, zLoc2);
+                    Bukkit.getOnlinePlayers().forEach(player -> {
+                        player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(actionBar));
+                    });
+                }
                 
                 if (loopNumber >= finalTime) {
                     border.setCenter(xLoc2, zLoc2);
