@@ -8,6 +8,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.Location;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -81,9 +82,6 @@ public final class BattleRoyale extends JavaPlugin implements Listener {
             return true;
         }
         Player player = (Player) sender;
-
-        // DEBUG: Print the command name
-        player.sendMessage("DEBUG: Command name: " + command.getName() + ", Lowercase: " + command.getName().toLowerCase());
 
         // Commands that are allowed for non-OPs
         List<String> allowedCommands = List.of("총", "chd", "빵", "기본탬", "rlqhsxpa", "밥");
@@ -174,6 +172,12 @@ public final class BattleRoyale extends JavaPlugin implements Listener {
                 player.sendMessage("§c이 명령어는 OP만 사용할 수 있습니다.");
             }
             return true;
+        } else if (command.getName().equalsIgnoreCase("top") || command.getName().equalsIgnoreCase("탑")) {
+            Location loc = player.getLocation();
+            Location highestBlock = player.getWorld().getHighestBlockAt(loc.getBlockX(), loc.getBlockZ()).getLocation();
+            player.teleport(highestBlock.add(0, 1, 0)); // Teleport 1 block above the highest block
+            player.sendMessage("§6[배틀로얄] §f가장 높은 블록으로 이동했습니다.");
+            return true;
         }
         return false;
     }
@@ -203,7 +207,32 @@ public final class BattleRoyale extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {
-        if (event.getBlock().getType() == Material.GLASS || event.getBlock().getType() == Material.GLASS_PANE) {
+        Material brokenBlock = event.getBlock().getType();
+        ItemStack droppedItem = null;
+
+        // Deepslate ores smelting
+        if (brokenBlock == Material.DEEPSLATE_IRON_ORE) {
+            droppedItem = new ItemStack(Material.IRON_INGOT);
+        } else if (brokenBlock == Material.DEEPSLATE_GOLD_ORE) {
+            droppedItem = new ItemStack(Material.GOLD_INGOT);
+        } else if (brokenBlock == Material.DEEPSLATE_COPPER_ORE) {
+            droppedItem = new ItemStack(Material.COPPER_INGOT);
+        } else if (brokenBlock == Material.DEEPSLATE_LAPIS_ORE) {
+            droppedItem = new ItemStack(Material.LAPIS_LAZULI, 4 + random.nextInt(5)); // 4-8 Lapis
+        } else if (brokenBlock == Material.DEEPSLATE_REDSTONE_ORE) {
+            droppedItem = new ItemStack(Material.REDSTONE, 4 + random.nextInt(2)); // 4-5 Redstone
+        } else if (brokenBlock == Material.DEEPSLATE_DIAMOND_ORE) {
+            droppedItem = new ItemStack(Material.DIAMOND);
+        } else if (brokenBlock == Material.DEEPSLATE_EMERALD_ORE) {
+            droppedItem = new ItemStack(Material.EMERALD);
+        } else if (brokenBlock == Material.DEEPSLATE_COAL_ORE) {
+            droppedItem = new ItemStack(Material.COAL);
+        }
+
+        if (droppedItem != null) {
+            event.setDropItems(false); // Cancel original drops
+            event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), droppedItem);
+        } else if (brokenBlock == Material.GLASS || brokenBlock == Material.GLASS_PANE) {
             if (random.nextInt(100) < 20) { // 20% chance
                 event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.AMETHYST_SHARD, 1));
             }
@@ -243,11 +272,9 @@ public final class BattleRoyale extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
-        borderManager.getBossBar().addPlayer(event.getPlayer());
     }
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
-        borderManager.getBossBar().removePlayer(event.getPlayer());
     }
 }

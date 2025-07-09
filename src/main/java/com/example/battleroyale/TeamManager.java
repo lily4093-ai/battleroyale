@@ -48,7 +48,7 @@ public class TeamManager {
             Team team = scoreboard.getTeam(teamName);
             if (team == null) {
                 team = scoreboard.registerNewTeam(teamName);
-                team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.FOR_OTHER_TEAMS);
+                team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.NEVER);
             }
         }
 
@@ -126,7 +126,7 @@ public class TeamManager {
         Team team = scoreboard.getTeam(teamName);
         if (team == null) {
             team = scoreboard.registerNewTeam(teamName);
-            team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.FOR_OTHER_TEAMS);
+            team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.NEVER);
         }
         team.addEntry(player.getName());
         playerTeams.put(player, teamNumber);

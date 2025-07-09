@@ -65,7 +65,7 @@ public class UtilManager implements Listener {
         Chest chest = (Chest) spawnLoc.getBlock().getState();
         Random random = new Random();
         chest.getInventory().setItem(0, new ItemStack(Material.BLAZE_ROD, random.nextInt(5) + 1));
-        chest.getInventory().setItem(1, new ItemStack(Material.NETHERITE_INGOT, random.nextInt(3)));
+        chest.getInventory().setItem(1, new ItemStack(Material.NETHERITE_INGOT, random.nextInt(2) + 1));
         chest.getInventory().setItem(2, new ItemStack(Material.QUARTZ, random.nextInt(6) + 5));
         chest.getInventory().setItem(3, new ItemStack(Material.GLOWSTONE_DUST, random.nextInt(4) + 5));
         chest.getInventory().setItem(4, new ItemStack(Material.IRON_INGOT, 64));
