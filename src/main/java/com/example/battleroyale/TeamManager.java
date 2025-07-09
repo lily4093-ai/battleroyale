@@ -6,6 +6,7 @@ import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
+import org.bukkit.GameMode;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -129,5 +130,18 @@ public class TeamManager {
         }
         team.addEntry(player.getName());
         playerTeams.put(player, teamNumber);
+    }
+
+    public Map<Player, Integer> getPlayerTeams() {
+        return playerTeams;
+    }
+
+    public boolean isTeamEliminated(int teamNumber) {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (player.getGameMode() != GameMode.SPECTATOR && playerTeams.containsKey(player) && playerTeams.get(player) == teamNumber) {
+                return false; // Found a living player in the team
+            }
+        }
+        return true; // No living players found in the team
     }
 }
