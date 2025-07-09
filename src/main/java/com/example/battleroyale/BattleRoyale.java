@@ -53,6 +53,14 @@ public final class BattleRoyale extends JavaPlugin implements Listener {
         pickaxeMeta.addEnchant(Enchantment.DURABILITY, 3, true);
         pickaxe.setItemMeta(pickaxeMeta);
         defaultItems.add(pickaxe);
+        
+        ItemStack axe = new ItemStack(Material.DIAMOND_AXE);
+        ItemMeta axeMeta = axe.getItemMeta();
+        axeMeta.addEnchant(Enchantment.DIG_SPEED, 3, true);
+        axeMeta.addEnchant(Enchantment.DURABILITY, 3, true);
+        axe.setItemMeta(axeMeta);
+        defaultItems.add(axe);
+
         defaultItems.add(new ItemStack(Material.BREAD, 64));
         defaultItems.add(new ItemStack(Material.ENCHANTING_TABLE, 1));
         defaultItems.add(new ItemStack(Material.BOOKSHELF, 64));
@@ -72,8 +80,11 @@ public final class BattleRoyale extends JavaPlugin implements Listener {
         }
         Player player = (Player) sender;
 
+        // DEBUG: Print the command name
+        player.sendMessage("DEBUG: Command name: " + command.getName() + ", Lowercase: " + command.getName().toLowerCase());
+
         // Commands that are allowed for non-OPs
-        List<String> allowedCommands = List.of("총", "chd", "빵", "기본탬");
+        List<String> allowedCommands = List.of("총", "chd", "빵", "기본탬", "rlqhsxpa", "밥");
 
         if (!allowedCommands.contains(command.getName().toLowerCase()) && !player.isOp()) {
             player.sendMessage("§c이 명령어는 OP만 사용할 수 있습니다.");
@@ -97,7 +108,7 @@ public final class BattleRoyale extends JavaPlugin implements Listener {
             return true;
         } else if (command.getName().equalsIgnoreCase("chd") || command.getName().equalsIgnoreCase("총")) {
             player.sendMessage("§6[배틀로얄] §f총 상점을 엽니다.");
-            player.performCommand("setblock ~ ~ ~ tacz:gun_smith_table"); // Assuming this command works
+            player.performCommand("give @s tacz:gun_smith_table"); // Assuming this command works
             return true;
         } else if (command.getName().equalsIgnoreCase("기본템설정")) {
             player.sendMessage("§6[배틀로얄] §f기본템 설정 인벤토리를 엽니다.");
