@@ -2,6 +2,7 @@
 package com.example.battleroyale;
 
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -11,6 +12,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -204,6 +206,37 @@ public final class BattleRoyale extends JavaPlugin implements Listener {
         if (event.getBlock().getType() == Material.GLASS || event.getBlock().getType() == Material.GLASS_PANE) {
             if (random.nextInt(100) < 20) { // 20% chance
                 event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.AMETHYST_SHARD, 1));
+            }
+        }
+    }
+
+    @EventHandler
+    public void onPlayerDeath(PlayerDeathEvent event) {
+        Player player = event.getEntity();
+        player.setGameMode(GameMode.SPECTATOR);
+        player.sendMessage("§6[배틀로얄] §f당신은 사망하여 관전 모드로 전환됩니다.");
+
+        Integer deadPlayerTeamNumber = teamManager.getPlayerTeams().get(player);
+        if (deadPlayerTeamNumber != null) {
+            if (teamManager.isTeamEliminated(deadPlayerTeamNumber)) {
+                Bukkit.broadcastMessage("§6[배틀로얄] §c" + deadPlayerTeamNumber + " 팀이 전멸했습니다!");
+
+                List<Integer> remainingTeams = new ArrayList<>();
+                for (Player p : Bukkit.getOnlinePlayers()) {
+                    if (p.getGameMode() != GameMode.SPECTATOR) {
+                        Integer teamNum = teamManager.getPlayerTeams().get(p);
+                        if (teamNum != null && !remainingTeams.contains(teamNum)) {
+                            remainingTeams.add(teamNum);
+                        }
+                    }
+                }
+
+                if (remainingTeams.size() == 1) {
+                    Bukkit.broadcastMessage("§6[배틀로얄] §a" + remainingTeams.get(0) + " 팀이 승리했습니다!");
+                    // Optionally, end the game here
+                } else if (remainingTeams.isEmpty()) {
+                    Bukkit.broadcastMessage("§6[배틀로얄] §e모든 팀이 전멸했습니다. 무승부!");
+                }
             }
         }
     }
