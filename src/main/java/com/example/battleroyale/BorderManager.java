@@ -91,7 +91,8 @@ public class BorderManager {
                         double xc = player.getLocation().getX();
                         double zc = player.getLocation().getZ();
                         if (!brIsinnextborder(xc, zc, currentPhase)) {
-                            player.sendTitle("§f", "§4§l[!] 자기장안으로 진입해야합니다!", 0, 20, 0);
+                            // 수정: 타이틀과 서브타이틀 파라미터 순서 변경
+                            player.sendTitle("§4§l[!] 자기장 경고", "§f자기장안으로 진입해야합니다!", 10, 40, 10);
                         }
                     });
                 }
