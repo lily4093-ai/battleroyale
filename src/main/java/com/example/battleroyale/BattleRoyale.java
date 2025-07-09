@@ -306,4 +306,8 @@ public final class BattleRoyale extends JavaPlugin implements Listener {
             GameManager.setIngame(false);
         }
     }
+
+    public List<ItemStack> getDefaultItems() {
+        return defaultItems;
+    }
 }
