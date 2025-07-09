@@ -4,6 +4,9 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.WorldBorder;
+import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarStyle;
+import org.bukkit.boss.BossBar;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.Random;
@@ -11,7 +14,7 @@ import java.util.Random;
 public class BorderManager {
 
     private WorldBorder border;
-    private World world; // Added this line
+    private World world;
     private double[] borderSizes = {2500, 2000, 1500, 1000, 500, 100, 10, 0};
     private double currentSize;
     private double borderCenterX;
@@ -19,11 +22,15 @@ public class BorderManager {
     private double nextBorderCenterX;
     private double nextBorderCenterZ;
     private boolean isShrinking = false;
-    private double borderSpeed = 1000.0; // Initial speed, will be updated
+    private double borderSpeed = 1000.0;
+    private BossBar bossBar;
 
     public BorderManager() {
-        this.world = Bukkit.getWorlds().get(0); // Modified this line
+        this.world = Bukkit.getWorlds().get(0);
         this.border = world.getWorldBorder();
+        this.bossBar = Bukkit.createBossBar("자기장", BarColor.RED, BarStyle.SOLID);
+        this.bossBar.setVisible(true);
+        Bukkit.getOnlinePlayers().forEach(player -> bossBar.addPlayer(player));
     }
 
     public double getBorderSize(int phase) {
@@ -35,8 +42,8 @@ public class BorderManager {
 
     public void brBorderinit() {
         currentSize = borderSizes[0];
-        borderCenterX = new Random().nextInt(2001) - 1000; // -1000 to 1000
-        borderCenterZ = new Random().nextInt(2001) - 1000; // -1000 to 1000
+        borderCenterX = new Random().nextInt(2001) - 1000;
+        borderCenterZ = new Random().nextInt(2001) - 1000;
         borderSpeed = 1000.0;
         makeIngameborder(1, currentSize, currentSize, borderCenterX, borderCenterZ);
     }
@@ -47,7 +54,10 @@ public class BorderManager {
 
         long speed = (long) Math.round((prevSize - newSize) / borderSpeed * 20);
         setBorderCenter(prevSize, border.getCenter().getX(), border.getCenter().getZ(), centerX, centerZ, speed);
-        border.setSize(newSize, speed / 20); // Convert ticks to seconds
+        border.setSize(newSize, speed / 20);
+
+        bossBar.setTitle("자기장: " + (int) newSize + "m");
+        bossBar.setProgress(1.0); // Reset progress to full
     }
 
     public void setBorderCenter(double prevSize, double xLoc1, double zLoc1, double xLoc2, double zLoc2, long time) {
@@ -61,7 +71,9 @@ public class BorderManager {
 
             @Override
             public void run() {
-                if (System.currentTimeMillis() - startTime >= time * 50) { // time is in ticks, 50ms per tick
+                long elapsed = System.currentTimeMillis() - startTime;
+                double progress = (double) elapsed / (time * 50); // time is in ticks, 50ms per tick
+                if (progress >= 1.0) {
                     border.setCenter(xLoc2, zLoc2);
                     borderCenterX = xLoc2;
                     borderCenterZ = zLoc2;
@@ -70,6 +82,7 @@ public class BorderManager {
                     Location randomCenter = makeRandomcenter(currentSize, nextSize, borderCenterX, borderCenterZ);
                     nextBorderCenterX = randomCenter.getX();
                     nextBorderCenterZ = randomCenter.getZ();
+                    bossBar.setProgress(0.0); // Shrinking complete
                     cancel();
                     return;
                 }
@@ -77,6 +90,7 @@ public class BorderManager {
                 currentX += xStep;
                 currentZ += zStep;
                 border.setCenter(currentX, currentZ);
+                bossBar.setProgress(1.0 - progress);
             }
         }.runTaskTimer(BattleRoyale.getPlugin(BattleRoyale.class), 1L, 1L);
     }
@@ -104,7 +118,7 @@ public class BorderManager {
     }
 
     public Location brGetspawnloc(String type) {
-        double space = 500; // 끝점에서 얼마나 여유를 두고 스폰시킬건지
+        double space = 500;
         double x = 0;
         double z = 0;
 
@@ -148,5 +162,9 @@ public class BorderManager {
 
     public boolean isShrinking() {
         return isShrinking;
+    }
+
+    public BossBar getBossBar() {
+        return bossBar;
     }
 }
