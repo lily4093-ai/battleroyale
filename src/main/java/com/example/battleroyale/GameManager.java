@@ -1,16 +1,25 @@
 
 package com.example.battleroyale;
 
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitRunnable;
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.TextComponent;
+
 public class GameManager {
 
-    private boolean isIngame = false;
-    private int gametime = 0;
-    private int phase = 0;
-    private int delay = 500;
+    private static boolean isIngame = false;
+    private static int gametime = 0;
+    private static int phase = 0;
+    private static int delay = 500;
     private BorderManager borderManager;
     private TeamManager teamManager;
+    private final BattleRoyale plugin;
 
-    public GameManager(BorderManager borderManager, TeamManager teamManager) {
+    public GameManager(BattleRoyale plugin, BorderManager borderManager, TeamManager teamManager) {
+        this.plugin = plugin;
         this.borderManager = borderManager;
         this.teamManager = teamManager;
     }
@@ -42,9 +51,9 @@ public class GameManager {
 
                     for (Player player : Bukkit.getOnlinePlayers()) {
                         if (borderManager.brIsinnextborder(player.getLocation().getX(), player.getLocation().getZ(), phase + 1)) {
-                            player.sendActionBar("§7자기장 크기: §c" + (int) currentSize + " §f| §7자기장 축소까지: §c" + timeLeft + "초 남음 §f| §7다음 자기장 중앙: §c(" + (int) nextBorderCenter.getX() + "," + (int) nextBorderCenter.getZ() + ")");
+                            player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText("§7자기장 크기: §c" + (int) currentSize + " §f| §7자기장 축소까지: §c" + timeLeft + "초 남음 §f| §7다음 자기장 중앙: §c(" + (int) nextBorderCenter.getX() + "," + (int) nextBorderCenter.getZ() + ")"));
                         } else {
-                            player.sendActionBar("§7자기장 크기: §c" + (int) currentSize + " §f| §7자기장 축소까지: §c" + timeLeft + "초 남음 §f| §7다음 자기장 중앙: §c(" + (int) nextBorderCenter.getX() + "," + (int) nextBorderCenter.getZ() + ") §f| §4§l현재 다음 자기장 바깥에 있습니다!");
+                            player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText("§7자기장 크기: §c" + (int) currentSize + " §f| §7자기장 축소까지: §c" + timeLeft + "초 남음 §f| §7다음 자기장 중앙: §c(" + (int) nextBorderCenter.getX() + "," + (int) nextBorderCenter.getZ() + ") §f| §4§l현재 다음 자기장 바깥에 있습니다!"));
                         }
                     }
                 }
@@ -81,8 +90,8 @@ public class GameManager {
         borderManager.makeIngameborder(getPhase(), newSize, prevSize, borderManager.getNextBorderCenter().getX(), borderManager.getNextBorderCenter().getZ());
     }
 
-    public void addGametime(int amount) {
-        this.gametime += amount;
+    public static void addGametime(int amount) {
+        gametime += amount;
     }
 
     public static void setIngame(boolean ingame) {
