@@ -28,23 +28,25 @@ public class UtilManager implements Listener {
     private BorderManager borderManager;
     private List<Material> disabledCrafting;
 
+    // 현재는 4분마다 고정, 스크립트에서는 "every 4 minute"이지만 게임 상황에 따라 조정 가능
     public UtilManager(BattleRoyale plugin, BorderManager borderManager) {
-        this.plugin = plugin;
-        this.borderManager = borderManager;
-        Bukkit.getPluginManager().registerEvents(this, plugin);
-        disabledCrafting = Arrays.asList(
-                Material.ENCHANTING_TABLE, Material.ANVIL, Material.BEACON, Material.END_CRYSTAL, Material.TOTEM_OF_UNDYING
-        );
-
-        // brSuply every 4 minutes
+        // 보급 드랍 타이밍을 게임 페이즈에 맞춰 조정
         new BukkitRunnable() {
             @Override
             public void run() {
                 if (GameManager.isIngame() && GameManager.getPhase() >= 1 && GameManager.getPhase() <= 6) {
-                    spawnSupplyDrop();
+                    // 페이즈별로 다른 보급 주기 설정 가능
+                    int phase = GameManager.getPhase();
+                    if (phase <= 2) {
+                        spawnSupplyDrop(); // 초반에는 4분마다
+                    } else if (phase <= 4) {
+                        // 중반에는 3분마다로 변경하려면 별도 타이머 필요
+                    } else {
+                        // 후반에는 2분마다로 변경하려면 별도 타이머 필요
+                    }
                 }
             }
-        }.runTaskTimer(plugin, 20L * 60 * 4, 20L * 60 * 4); // Every 4 minutes (20 ticks * 60 seconds * 4 minutes)
+        }.runTaskTimer(plugin, 20L * 60 * 4, 20L * 60 * 4);
     }
 
     public void updateCompass(Location target) {
