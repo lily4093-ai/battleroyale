@@ -28,12 +28,23 @@ public class UtilManager implements Listener {
     private BorderManager borderManager;
     private List<Material> disabledCrafting;
 
-    public UtilManager(BattleRoyale plugin) {
+    public UtilManager(BattleRoyale plugin, BorderManager borderManager) {
         this.plugin = plugin;
+        this.borderManager = borderManager;
         Bukkit.getPluginManager().registerEvents(this, plugin);
         disabledCrafting = Arrays.asList(
-                // ... (disabled crafting list)
+                Material.ENCHANTING_TABLE, Material.ANVIL, Material.BEACON, Material.END_CRYSTAL, Material.TOTEM_OF_UNDYING
         );
+
+        // brSuply every 4 minutes
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (GameManager.isIngame() && GameManager.getPhase() >= 1 && GameManager.getPhase() <= 6) {
+                    spawnSupplyDrop();
+                }
+            }
+        }.runTaskTimer(plugin, 20L * 60 * 4, 20L * 60 * 4); // Every 4 minutes (20 ticks * 60 seconds * 4 minutes)
     }
 
     public void updateCompass(Location target) {
