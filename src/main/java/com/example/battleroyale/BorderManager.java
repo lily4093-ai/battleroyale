@@ -149,6 +149,10 @@ public class BorderManager {
     }
 
     public void brShrinkborder() {
+        if (currentPhase == 1) borderSpeed = 1.0;      // 첫 축소는 빠르게
+        else if (currentPhase == 2) borderSpeed = 2.0;  // 점진적으로 느리게
+        else if (currentPhase == 3) borderSpeed = 3.0;
+        else if (currentPhase >= 4) borderSpeed = 5.0;  // 후반부는 더 느리게
         double prevSize = currentSize;
         currentPhase = currentPhase + 1;
         double newSize = getBorderSize(currentPhase);
