@@ -1,4 +1,3 @@
-
 package com.example.battleroyale;
 
 import org.bukkit.Bukkit;
@@ -83,7 +82,7 @@ public class TeamManager {
 
     public void teamTP(int size) {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            player.setLevel(180); // Skript's xp add @a 180 levels
+            player.setLevel(180);
             Integer teamNumber = playerTeams.get(player);
             if (teamNumber != null) {
                 Location spawnLoc = null;
@@ -101,8 +100,6 @@ public class TeamManager {
                         spawnLoc = borderManager.brGetspawnloc("-+");
                         break;
                     default:
-                        // Handle more than 4 teams or other cases
-                        // For now, just use a default spawn if team number is > 4
                         spawnLoc = borderManager.brGetspawnloc("++");
                         break;
                 }
@@ -114,14 +111,12 @@ public class TeamManager {
     }
 
     public void joinTeam(Player player, int teamNumber) {
-        // Remove from existing team if any
         for (Team team : scoreboard.getTeams()) {
             if (team.hasEntry(player.getName())) {
                 team.removeEntry(player.getName());
             }
         }
 
-        // Add to new team
         String teamName = "team" + teamNumber;
         Team team = scoreboard.getTeam(teamName);
         if (team == null) {
@@ -138,10 +133,10 @@ public class TeamManager {
 
     public boolean isTeamEliminated(int teamNumber) {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (player.getGameMode() != GameMode.SPECTATOR && playerTeams.containsKey(player) && playerTeams.get(player) == teamNumber) {
-                return false; // Found a living player in the team
+            if (playerTeams.containsKey(player) && playerTeams.get(player) == teamNumber) {
+，返回 true;
             }
         }
-        return true; // No living players found in the team
+        return false;
     }
 }
