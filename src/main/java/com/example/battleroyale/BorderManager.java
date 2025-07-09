@@ -22,8 +22,9 @@ public class BorderManager {
     private double nextBorderCenterX;
     private double nextBorderCenterZ;
     private boolean isShrinking = false;
-    private double borderSpeed = 1000.0;
+    private double borderSpeed = 2000.0;
     private BossBar bossBar;
+    private int currentPhase;
 
     public BorderManager() {
         this.world = Bukkit.getWorlds().get(0);
@@ -45,10 +46,12 @@ public class BorderManager {
         borderCenterX = new Random().nextInt(2001) - 1000;
         borderCenterZ = new Random().nextInt(2001) - 1000;
         borderSpeed = 1000.0;
-        makeIngameborder(1, currentSize, currentSize, borderCenterX, borderCenterZ);
+        currentPhase = 0; // Initial phase
+        makeIngameborder(currentPhase, currentSize, currentSize, borderCenterX, borderCenterZ);
     }
 
     public void makeIngameborder(int phase, double newSize, double prevSize, double centerX, double centerZ) {
+        this.currentPhase = phase;
         currentSize = newSize;
         Bukkit.broadcastMessage("§6[배틀로얄] §f자기장이 줄어듭니다!");
 
@@ -56,8 +59,15 @@ public class BorderManager {
         setBorderCenter(prevSize, border.getCenter().getX(), border.getCenter().getZ(), centerX, centerZ, speed);
         border.setSize(newSize, speed / 20);
 
-        bossBar.setTitle("자기장: " + (int) newSize + "m");
+        bossBar.setTitle("자기장");
         bossBar.setProgress(1.0); // Reset progress to full
+        updateBossBarSubtitle(speed / 20); // Update with initial time
+    }
+
+    private void updateBossBarSubtitle(long timeRemainingSeconds) {
+        String subtitle = String.format("현재 %d단계 | 축소까지 %d초 남음 | 다음 중앙: X:%.0f, Z:%.0f",
+                currentPhase + 1, timeRemainingSeconds, nextBorderCenterX, nextBorderCenterZ);
+        bossBar.setTitle("자기장 - " + subtitle);
     }
 
     public void setBorderCenter(double prevSize, double xLoc1, double zLoc1, double xLoc2, double zLoc2, long time) {
@@ -72,17 +82,21 @@ public class BorderManager {
             @Override
             public void run() {
                 long elapsed = System.currentTimeMillis() - startTime;
-                double progress = (double) elapsed / (time * 50); // time is in ticks, 50ms per tick
+                long totalTimeMillis = time * 50;
+                double progress = (double) elapsed / totalTimeMillis;
+                long timeRemainingSeconds = (totalTimeMillis - elapsed) / 1000;
+
                 if (progress >= 1.0) {
                     border.setCenter(xLoc2, zLoc2);
                     borderCenterX = xLoc2;
                     borderCenterZ = zLoc2;
                     isShrinking = false;
-                    double nextSize = getBorderSize(GameManager.getPhase() + 1);
+                    double nextSize = getBorderSize(currentPhase + 1);
                     Location randomCenter = makeRandomcenter(currentSize, nextSize, borderCenterX, borderCenterZ);
                     nextBorderCenterX = randomCenter.getX();
                     nextBorderCenterZ = randomCenter.getZ();
                     bossBar.setProgress(0.0); // Shrinking complete
+                    updateBossBarSubtitle(0); // Update with 0 seconds remaining
                     cancel();
                     return;
                 }
@@ -91,6 +105,7 @@ public class BorderManager {
                 currentZ += zStep;
                 border.setCenter(currentX, currentZ);
                 bossBar.setProgress(1.0 - progress);
+                updateBossBarSubtitle(timeRemainingSeconds);
             }
         }.runTaskTimer(BattleRoyale.getPlugin(BattleRoyale.class), 1L, 1L);
     }
