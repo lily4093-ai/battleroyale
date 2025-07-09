@@ -2,6 +2,7 @@ package com.example.battleroyale;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
@@ -82,6 +83,8 @@ public class TeamManager {
 
     public void teamTP(int size) {
         for (Player player : Bukkit.getOnlinePlayers()) {
+            player.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(40.0);
+            player.setHealth(40.0);
             player.setLevel(180);
             Integer teamNumber = playerTeams.get(player);
             if (teamNumber != null) {
@@ -134,9 +137,11 @@ public class TeamManager {
     public boolean isTeamEliminated(int teamNumber) {
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (playerTeams.containsKey(player) && playerTeams.get(player) == teamNumber) {
-，返回 true;
+                if (player.getGameMode() != GameMode.SPECTATOR) {
+                    return false; // Found a living player, so team is not eliminated.
+                }
             }
         }
-        return false;
+        return true; // No living players found in the team, so team is eliminated.
     }
 }

@@ -8,6 +8,8 @@ import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.scheduler.BukkitRunnable;
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.TextComponent;
 
 import java.util.Random;
 
@@ -25,6 +27,8 @@ public class BorderManager {
     private double borderSpeed = 3.5;
     private BossBar bossBar;
     private int currentPhase;
+    private double shrinkStartSize; // Corrected declaration location
+    private long totalShrinkTicks;  // Corrected declaration location
 
     public BorderManager() {
         this.world = Bukkit.getWorlds().get(0);
@@ -56,6 +60,8 @@ public class BorderManager {
         Bukkit.broadcastMessage("§6[배틀로얄] §f자기장이 줄어듭니다!");
 
         long speed = Math.round((prevSize - newSize) / borderSpeed * 20);
+        this.totalShrinkTicks = speed;
+        this.shrinkStartSize = prevSize;
         setBorderCenter(prevSize, border.getCenter().getX(), border.getCenter().getZ(), centerX, centerZ, speed);
         border.setSize(newSize, (long)((prevSize - newSize) / borderSpeed));
 
@@ -65,19 +71,19 @@ public class BorderManager {
 
     public void setBorderCenter(double prevSize, double xLoc1, double zLoc1, double xLoc2, double zLoc2, long time) {
         isShrinking = true;
-        time = Math.round(time);
+        final long finalTime = Math.round(time);
         
         new BukkitRunnable() {
             double currentX = xLoc1;
             double currentZ = zLoc1;
-            double xStep = (xLoc2 - xLoc1) / time;
-            double zStep = (zLoc2 - zLoc1) / time;
+            double xStep = (xLoc2 - xLoc1) / finalTime;
+            double zStep = (zLoc2 - zLoc1) / finalTime;
             long loopNumber = 0;
 
             @Override
             public void run() {
                 loopNumber++;
-                double perc = Math.round((double)loopNumber / time * 100);
+                double perc = Math.round((double)loopNumber / finalTime * 100);
                 
                 // 매 3초마다 (60틱) 플레이어들에게 자기장 경고 메시지 전송
                 if (loopNumber % 60 == 0) {
@@ -90,14 +96,9 @@ public class BorderManager {
                     });
                 }
                 
-                // 액션바 업데이트
-                String actionBar = String.format("§7자기장 크기: §c%.0f §7> §c%.0f §f| §7자기장 축소 진행률: §c%.0f%% §f| §7자기장 중앙: §c( %.0f, %.0f )", 
-                    prevSize, currentSize, perc, xLoc2, zLoc2);
-                Bukkit.getOnlinePlayers().forEach(player -> {
-                    player.sendActionBar(actionBar);
-                });
                 
-                if (loopNumber >= time) {
+                
+                if (loopNumber >= finalTime) {
                     border.setCenter(xLoc2, zLoc2);
                     borderCenterX = xLoc2;
                     borderCenterZ = zLoc2;
@@ -122,19 +123,10 @@ public class BorderManager {
     }
 
     public Location makeRandomcenter(double prevSize, double newSize, double prevCenterx, double prevCenterz) {
-        double x1 = prevCenterx + (prevSize / 2);
-        double x2 = prevCenterx - (prevSize / 2);
-        double z1 = prevCenterz + (prevSize / 2);
-        double z2 = prevCenterz - (prevSize / 2);
-
-        x1 += newSize / 2;
-        x2 -= newSize / 2;
-        z1 += newSize / 2;
-        z2 -= newSize / 2;
-
+        double offset = (prevSize - newSize) / 2.0;
         Random random = new Random();
-        double randomX = x2 + (x1 - x2) * random.nextDouble();
-        double randomZ = z2 + (z1 - z2) * random.nextDouble();
+        double randomX = prevCenterx + (random.nextDouble() * 2 - 1) * offset;
+        double randomZ = prevCenterz + (random.nextDouble() * 2 - 1) * offset;
 
         return new Location(world, randomX, 0, randomZ);
     }
@@ -149,10 +141,6 @@ public class BorderManager {
     }
 
     public void brShrinkborder() {
-        if (currentPhase == 1) borderSpeed = 1.0;      // 첫 축소는 빠르게
-        else if (currentPhase == 2) borderSpeed = 2.0;  // 점진적으로 느리게
-        else if (currentPhase == 3) borderSpeed = 3.0;
-        else if (currentPhase >= 4) borderSpeed = 5.0;  // 후반부는 더 느리게
         double prevSize = currentSize;
         currentPhase = currentPhase + 1;
         double newSize = getBorderSize(currentPhase);
@@ -210,5 +198,13 @@ public class BorderManager {
 
     public BossBar getBossBar() {
         return bossBar;
+    }
+
+    public double getShrinkStartSize() {
+        return shrinkStartSize;
+    }
+
+    public long getTotalShrinkTicks() {
+        return totalShrinkTicks;
     }
 }

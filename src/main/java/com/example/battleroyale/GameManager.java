@@ -54,57 +54,83 @@ public class GameManager {
 
     private void startGameLoop() {
         new BukkitRunnable() {
+            private long tickCounter = 0;
+            private long shrinkTickCounter = 0;
+
             @Override
             public void run() {
-                if (!isIngame || phase >= 7) {
+                if (!isIngame) {
                     cancel();
                     return;
                 }
-                if (!borderManager.isShrinking()) {
-                    addGametime(1);
+
+                tickCounter++;
+
+                if (borderManager.isShrinking()) {
+                    shrinkTickCounter++;
+
+                    double prevSize = borderManager.getShrinkStartSize();
+                    double currentTargetSize = borderManager.getCurrentSize();
+                    long totalShrinkTicks = borderManager.getTotalShrinkTicks();
+                    double currentActualSize = borderManager.getBorder().getSize();
+
+                    double perc = 0;
+                    if (totalShrinkTicks > 0) {
+                        perc = (double)shrinkTickCounter / totalShrinkTicks * 100;
+                        if (perc > 100) perc = 100;
+                    }
+                    
+                    double currentBorderCenterX = borderManager.getBorder().getCenter().getX();
+                    double currentBorderCenterZ = borderManager.getBorder().getCenter().getZ();
+
+                    String message = String.format("§7자기장 크기: §c%.0f §7> §c%.0f §f| §7자기장 축소 진행률: §c%.0f%% §f| §7자기장 중앙: §c( %.0f, %.0f )",
+                            prevSize, currentTargetSize, perc, currentBorderCenterX, currentBorderCenterZ);
+                    
+                    for (Player player : Bukkit.getOnlinePlayers()) {
+                         player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
+                    }
+
+                } else {
+                    shrinkTickCounter = 0;
+
+                    if (tickCounter % 20 == 0) {
+                        addGametime(1);
+
+                        if (gametime >= delay) {
+                            setGametime(0);
+                            switch (phase) {
+                                case 1: setDelay(420); break;
+                                case 2: setDelay(180); break;
+                                case 3: setDelay(100); break;
+                                case 4: setDelay(50);  break;
+                                case 5: setDelay(30);  break;
+                                case 6: setDelay(30);  break;
+                            }
+                            if (phase < 7) {
+                                brShrinkborder();
+                            }
+                        }
+                    }
+                    
                     int timeLeft = delay - gametime;
                     double nextSize = borderManager.getBorderSize(phase + 1);
                     double centerX = borderManager.getNextBorderCenter().getX();
                     double centerZ = borderManager.getNextBorderCenter().getZ();
+                    String message = String.format("§7자기장 크기: §c%.0f §f| §7자기장 축소까지: §c%d초 남음 §f| §7다음 자기장 중앙: §c(%.0f,%.0f)",
+                            borderManager.getCurrentSize(), timeLeft, centerX, centerZ);
+
                     for (Player player : Bukkit.getOnlinePlayers()) {
                         double x = player.getLocation().getX();
                         double z = player.getLocation().getZ();
-                        String message = String.format("§7자기장 크기: §c%.0f §f| §7자기장 축소까지: §c%d초 남음 §f| §7다음 자기장 중앙: §c(%.0f,%.0f)",
-                                borderManager.getCurrentSize(), timeLeft, centerX, centerZ);
                         if (borderManager.brIsinnextborder(x, z, phase + 1)) {
-                            player.sendActionBar(message);
+                            player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
                         } else {
-                            player.sendActionBar(message + " §f| §4§l현재 다음 자기장 바깥에 있습니다!");
+                            player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message + " §f| §4§l[!] 다음 자기장 바깥에 있습니다!"));
                         }
-                    }
-                    if (gametime >= delay) {
-                        setGametime(0);
-                        // Set delays based on phase as per battleroyale.sk
-                        switch (phase) {
-                            case 2:
-                                setDelay(420); // 7 minutes
-                                break;
-                            case 3:
-                                setDelay(180); // 3 minutes
-                                break;
-                            case 4:
-                                setDelay(100); // 1 minute 40 seconds
-                                break;
-                            case 5:
-                                setDelay(50); // 50 seconds
-                                break;
-                            case 6:
-                                setDelay(30); // 30 seconds
-                                break;
-                            default:
-                                setDelay(500); // Default for phase 1
-                                break;
-                        }
-                        brShrinkborder();
                     }
                 }
             }
-        }.runTaskTimer(plugin, 20L, 20L); // Run every second
+        }.runTaskTimer(plugin, 0L, 1L);
     }
 
     public static void addGametime(int amount) {
