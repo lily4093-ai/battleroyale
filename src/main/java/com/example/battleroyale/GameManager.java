@@ -7,6 +7,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 public class GameManager {
 
@@ -32,6 +34,12 @@ public class GameManager {
             teamManager.splitTeam(teamSize);
         } else if (mode.equalsIgnoreCase("im")) {
             teamManager.teamTP(teamSize);
+        }
+
+        // Apply potion effects to all online players
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            player.addPotionEffect(new PotionEffect(PotionEffectType.NIGHT_VISION, Integer.MAX_VALUE, 0, false, false));
+            player.addPotionEffect(new PotionEffect(PotionEffectType.SATURATION, 5 * 60 * 20, 0, false, false));
         }
 
         new BukkitRunnable() {
