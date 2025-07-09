@@ -8,6 +8,8 @@ import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.scheduler.BukkitRunnable;
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.TextComponent;
 
 import java.util.Random;
 
@@ -65,19 +67,19 @@ public class BorderManager {
 
     public void setBorderCenter(double prevSize, double xLoc1, double zLoc1, double xLoc2, double zLoc2, long time) {
         isShrinking = true;
-        time = Math.round(time);
+        final long finalTime = Math.round(time);
         
         new BukkitRunnable() {
             double currentX = xLoc1;
             double currentZ = zLoc1;
-            double xStep = (xLoc2 - xLoc1) / time;
-            double zStep = (zLoc2 - zLoc1) / time;
+            double xStep = (xLoc2 - xLoc1) / finalTime;
+            double zStep = (zLoc2 - zLoc1) / finalTime;
             long loopNumber = 0;
 
             @Override
             public void run() {
                 loopNumber++;
-                double perc = Math.round((double)loopNumber / time * 100);
+                double perc = Math.round((double)loopNumber / finalTime * 100);
                 
                 // 매 3초마다 (60틱) 플레이어들에게 자기장 경고 메시지 전송
                 if (loopNumber % 60 == 0) {
@@ -94,10 +96,10 @@ public class BorderManager {
                 String actionBar = String.format("§7자기장 크기: §c%.0f §7> §c%.0f §f| §7자기장 축소 진행률: §c%.0f%% §f| §7자기장 중앙: §c( %.0f, %.0f )", 
                     prevSize, currentSize, perc, xLoc2, zLoc2);
                 Bukkit.getOnlinePlayers().forEach(player -> {
-                    player.sendActionBar(actionBar);
+                    player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(actionBar));
                 });
                 
-                if (loopNumber >= time) {
+                if (loopNumber >= finalTime) {
                     border.setCenter(xLoc2, zLoc2);
                     borderCenterX = xLoc2;
                     borderCenterZ = zLoc2;

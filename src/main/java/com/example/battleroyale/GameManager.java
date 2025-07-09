@@ -72,9 +72,9 @@ public class GameManager {
                         String message = String.format("§7자기장 크기: §c%.0f §f| §7자기장 축소까지: §c%d초 남음 §f| §7다음 자기장 중앙: §c(%.0f,%.0f)",
                                 borderManager.getCurrentSize(), timeLeft, centerX, centerZ);
                         if (borderManager.brIsinnextborder(x, z, phase + 1)) {
-                            player.sendActionBar(message);
+                            player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
                         } else {
-                            player.sendActionBar(message + " §f| §4§l현재 다음 자기장 바깥에 있습니다!");
+                            player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message + " §f| §4§l현재 다음 자기장 바깥에 있습니다!"));
                         }
                     }
                     if (gametime >= delay) {
