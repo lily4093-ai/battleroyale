@@ -37,6 +37,14 @@ public class GameManager {
         } else if (mode.equalsIgnoreCase("im")) {
             teamManager.teamTP(teamSize);
         }
+
+        // Give default items to all online players
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            player.getInventory().clear(); // Clear inventory first
+            for (org.bukkit.inventory.ItemStack item : plugin.getDefaultItems()) {
+                player.getInventory().addItem(item);
+            }
+        }
     }
 
     public void brBorderinit() {
