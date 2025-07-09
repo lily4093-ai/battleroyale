@@ -1,4 +1,3 @@
-
 package com.example.battleroyale;
 
 import org.bukkit.Bukkit;
@@ -21,15 +20,17 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.boss.BossBar;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
+import java.util.UUID;
 
 public final class BattleRoyale extends JavaPlugin implements Listener {
 
@@ -39,6 +40,7 @@ public final class BattleRoyale extends JavaPlugin implements Listener {
     private UtilManager utilManager;
     private List<ItemStack> defaultItems = new ArrayList<>();
     private Random random = new Random();
+    private Set<UUID> deadPlayers = new HashSet<>();
 
     @Override
     public void onEnable() {
@@ -67,7 +69,6 @@ public final class BattleRoyale extends JavaPlugin implements Listener {
         defaultItems.add(new ItemStack(Material.BREAD, 64));
         defaultItems.add(new ItemStack(Material.ENCHANTING_TABLE, 1));
         defaultItems.add(new ItemStack(Material.BOOKSHELF, 64));
-
     }
 
     @Override
@@ -84,7 +85,7 @@ public final class BattleRoyale extends JavaPlugin implements Listener {
         Player player = (Player) sender;
 
         // Commands that are allowed for non-OPs
-        List<String> allowedCommands = List.of("총", "chd", "빵", "기본탬", "rlqhsxpa", "밥");
+        List<String> allowedCommands = List.of("총", "chd", "빵", "기본템", "rlqhsxpa", "밥");
 
         if (!allowedCommands.contains(command.getName().toLowerCase()) && !player.isOp()) {
             player.sendMessage("§c이 명령어는 OP만 사용할 수 있습니다.");
@@ -93,14 +94,21 @@ public final class BattleRoyale extends JavaPlugin implements Listener {
 
         if (command.getName().equalsIgnoreCase("br")) {
             if (args.length > 1) {
-                int size = Integer.parseInt(args[1]);
-                if (args[0].equalsIgnoreCase("startdefault")) {
-                    player.sendMessage("§6[배틀로얄] §f기본 배틀로얄 게임을 시작합니다. 자기장 크기: §c" + size);
-                    gameManager.brGameinit("default", size);
-                    return true;
-                } else if (args[0].equalsIgnoreCase("startim")) {
-                    player.sendMessage("§6[배틀로얄] §f팀 배틀로얄 게임을 시작합니다. 자기장 크기: §c" + size);
-                    gameManager.brGameinit("im", size);
+                try {
+                    int size = Integer.parseInt(args[1]);
+                    if (args[0].equalsIgnoreCase("startdefault")) {
+                        player.sendMessage("§6[배틀로얄] §f기본 배틀로얄 게임을 시작합니다. 자기장 크기: §c" + size);
+                        deadPlayers.clear(); // Reset dead players on game start
+                        gameManager.brGameinit("default", size);
+                        return true;
+                    } else if (args[0].equalsIgnoreCase("startim")) {
+                        player.sendMessage("§6[배틀로얄] §f팀 배틀로얄 게임을 시작합니다. 자기장 크기: §c" + size);
+                        deadPlayers.clear(); // Reset dead players on game start
+                        gameManager.brGameinit("im", size);
+                        return true;
+                    }
+                } catch (NumberFormatException e) {
+                    player.sendMessage("§6[배틀로얄] §c유효한 숫자를 입력해주세요.");
                     return true;
                 }
             }
@@ -108,7 +116,7 @@ public final class BattleRoyale extends JavaPlugin implements Listener {
             return true;
         } else if (command.getName().equalsIgnoreCase("chd") || command.getName().equalsIgnoreCase("총")) {
             player.sendMessage("§6[배틀로얄] §f총 상점을 엽니다.");
-            player.performCommand("give @s tacz:gun_smith_table"); // Assuming this command works
+            player.performCommand("give @s tacz:gun_smith_table");
             return true;
         } else if (command.getName().equalsIgnoreCase("기본템설정")) {
             player.sendMessage("§6[배틀로얄] §f기본템 설정 인벤토리를 엽니다.");
@@ -175,7 +183,7 @@ public final class BattleRoyale extends JavaPlugin implements Listener {
         } else if (command.getName().equalsIgnoreCase("top") || command.getName().equalsIgnoreCase("탑")) {
             Location loc = player.getLocation();
             Location highestBlock = player.getWorld().getHighestBlockAt(loc.getBlockX(), loc.getBlockZ()).getLocation();
-            player.teleport(highestBlock.add(0, 1, 0)); // Teleport 1 block above the highest block
+            player.teleport(highestBlock.add(0, 1, 0));
             player.sendMessage("§6[배틀로얄] §f가장 높은 블록으로 이동했습니다.");
             return true;
         }
@@ -210,7 +218,6 @@ public final class BattleRoyale extends JavaPlugin implements Listener {
         Material brokenBlock = event.getBlock().getType();
         ItemStack droppedItem = null;
 
-        // Deepslate ores smelting
         if (brokenBlock == Material.DEEPSLATE_IRON_ORE) {
             droppedItem = new ItemStack(Material.IRON_INGOT);
         } else if (brokenBlock == Material.DEEPSLATE_GOLD_ORE) {
@@ -218,9 +225,9 @@ public final class BattleRoyale extends JavaPlugin implements Listener {
         } else if (brokenBlock == Material.DEEPSLATE_COPPER_ORE) {
             droppedItem = new ItemStack(Material.COPPER_INGOT);
         } else if (brokenBlock == Material.DEEPSLATE_LAPIS_ORE) {
-            droppedItem = new ItemStack(Material.LAPIS_LAZULI, 4 + random.nextInt(5)); // 4-8 Lapis
+            droppedItem = new ItemStack(Material.LAPIS_LAZULI, 4 + random.nextInt(5));
         } else if (brokenBlock == Material.DEEPSLATE_REDSTONE_ORE) {
-            droppedItem = new ItemStack(Material.REDSTONE, 4 + random.nextInt(2)); // 4-5 Redstone
+            droppedItem = new ItemStack(Material.REDSTONE, 4 + random.nextInt(2));
         } else if (brokenBlock == Material.DEEPSLATE_DIAMOND_ORE) {
             droppedItem = new ItemStack(Material.DIAMOND);
         } else if (brokenBlock == Material.DEEPSLATE_EMERALD_ORE) {
@@ -230,10 +237,10 @@ public final class BattleRoyale extends JavaPlugin implements Listener {
         }
 
         if (droppedItem != null) {
-            event.setDropItems(false); // Cancel original drops
+            event.setDropItems(false);
             event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), droppedItem);
         } else if (brokenBlock == Material.GLASS || brokenBlock == Material.GLASS_PANE) {
-            if (random.nextInt(100) < 20) { // 20% chance
+            if (random.nextInt(100) < 20) {
                 event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.AMETHYST_SHARD, 1));
             }
         }
@@ -243,38 +250,60 @@ public final class BattleRoyale extends JavaPlugin implements Listener {
     public void onPlayerDeath(PlayerDeathEvent event) {
         Player player = event.getEntity();
         player.setGameMode(GameMode.SPECTATOR);
+        deadPlayers.add(player.getUniqueId());
         player.sendMessage("§6[배틀로얄] §f당신은 사망하여 관전 모드로 전환됩니다.");
 
         Integer deadPlayerTeamNumber = teamManager.getPlayerTeams().get(player);
         if (deadPlayerTeamNumber != null) {
             if (teamManager.isTeamEliminated(deadPlayerTeamNumber)) {
                 Bukkit.broadcastMessage("§6[배틀로얄] §c" + deadPlayerTeamNumber + " 팀이 전멸했습니다!");
-
-                List<Integer> remainingTeams = new ArrayList<>();
-                for (Player p : Bukkit.getOnlinePlayers()) {
-                    if (p.getGameMode() != GameMode.SPECTATOR) {
-                        Integer teamNum = teamManager.getPlayerTeams().get(p);
-                        if (teamNum != null && !remainingTeams.contains(teamNum)) {
-                            remainingTeams.add(teamNum);
-                        }
-                    }
-                }
-
-                if (remainingTeams.size() == 1) {
-                    Bukkit.broadcastMessage("§6[배틀로얄] §a" + remainingTeams.get(0) + " 팀이 승리했습니다!");
-                    // Optionally, end the game here
-                } else if (remainingTeams.isEmpty()) {
-                    Bukkit.broadcastMessage("§6[배틀로얄] §e모든 팀이 전멸했습니다. 무승부!");
-                }
+                checkGameEnd();
             }
         }
     }
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+        if (GameManager.isIngame() && deadPlayers.contains(player.getUniqueId())) {
+            player.setGameMode(GameMode.SPECTATOR);
+            player.sendMessage("§6[배틀로얄] §f당신은 이전에 사망하여 관전 모드로 접속했습니다.");
+        }
     }
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
+        Player player = event.getPlayer();
+        if (GameManager.isIngame() && player.getGameMode() != GameMode.SPECTATOR) {
+            deadPlayers.add(player.getUniqueId());
+            player.setGameMode(GameMode.SPECTATOR);
+            Integer teamNumber = teamManager.getPlayerTeams().get(player);
+            if (teamNumber != null) {
+                if (teamManager.isTeamEliminated(teamNumber)) {
+                    Bukkit.broadcastMessage("§6[배틀로얄] §c" + teamNumber + " 팀이 전멸했습니다!");
+                    checkGameEnd();
+                }
+            }
+        }
+    }
+
+    private void checkGameEnd() {
+        List<Integer> remainingTeams = new ArrayList<>();
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            if (p.getGameMode() != GameMode.SPECTATOR) {
+                Integer teamNum = teamManager.getPlayerTeams().get(p);
+                if (teamNum != null && !remainingTeams.contains(teamNum)) {
+                    remainingTeams.add(teamNum);
+                }
+            }
+        }
+
+        if (remainingTeams.size() == 1) {
+            Bukkit.broadcastMessage("§6[배틀로얄] §a" + remainingTeams.get(0) + " 팀이 승리했습니다!");
+            GameManager.setIngame(false);
+        } else if (remainingTeams.isEmpty()) {
+            Bukkit.broadcastMessage("§6[배틀로얄] §e모든 팀이 전멸했습니다. 무승부!");
+            GameManager.setIngame(false);
+        }
     }
 }

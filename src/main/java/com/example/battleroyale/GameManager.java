@@ -1,4 +1,3 @@
-
 package com.example.battleroyale;
 
 import org.bukkit.Bukkit;
@@ -24,21 +23,19 @@ public class GameManager {
         this.plugin = plugin;
         this.borderManager = borderManager;
         this.teamManager = teamManager;
+        startGameLoop();
     }
 
     public void brGameinit(String mode, int teamSize) {
-        setDelay(500);  // 첫 페이즈 대기시간
-        
-        // 게임 루프에서 페이즈별 delay 설정 수정
-        if (gametime >= delay) {
-            setGametime(0);
-            if (phase == 1) setDelay(500);      // 첫 페이즈: 8분 20초
-            else if (phase == 2) setDelay(420); // 두 번째: 7분
-            else if (phase == 3) setDelay(180); // 세 번째: 3분
-            else if (phase == 4) setDelay(100); // 네 번째: 1분 40초
-            else if (phase == 5) setDelay(50);  // 다섯 번째: 50초
-            else if (phase == 6) setDelay(30);  // 여섯 번째: 30초
-            brShrinkborder();
+        setIngame(true);
+        setGametime(0);
+        setPhase(0);
+        setDelay(500); // Initial delay for phase 1: 500 seconds (8m20s)
+        brBorderinit();
+        if (mode.equalsIgnoreCase("default")) {
+            teamManager.splitTeam(teamSize);
+        } else if (mode.equalsIgnoreCase("im")) {
+            teamManager.teamTP(teamSize);
         }
     }
 
@@ -53,6 +50,61 @@ public class GameManager {
         double newSize = borderManager.getBorderSize(getPhase());
         borderManager.setCurrentSize(newSize);
         borderManager.makeIngameborder(getPhase(), newSize, prevSize, borderManager.getNextBorderCenter().getX(), borderManager.getNextBorderCenter().getZ());
+    }
+
+    private void startGameLoop() {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (!isIngame || phase >= 7) {
+                    cancel();
+                    return;
+                }
+                if (!borderManager.isShrinking()) {
+                    addGametime(1);
+                    int timeLeft = delay - gametime;
+                    double nextSize = borderManager.getBorderSize(phase + 1);
+                    double centerX = borderManager.getNextBorderCenter().getX();
+                    double centerZ = borderManager.getNextBorderCenter().getZ();
+                    for (Player player : Bukkit.getOnlinePlayers()) {
+                        double x = player.getLocation().getX();
+                        double z = player.getLocation().getZ();
+                        String message = String.format("§7자기장 크기: §c%.0f §f| §7자기장 축소까지: §c%d초 남음 §f| §7다음 자기장 중앙: §c(%.0f,%.0f)",
+                                borderManager.getCurrentSize(), timeLeft, centerX, centerZ);
+                        if (borderManager.brIsinnextborder(x, z, phase + 1)) {
+                            player.sendActionBar(message);
+                        } else {
+                            player.sendActionBar(message + " §f| §4§l현재 다음 자기장 바깥에 있습니다!");
+                        }
+                    }
+                    if (gametime >= delay) {
+                        setGametime(0);
+                        // Set delays based on phase as per battleroyale.sk
+                        switch (phase) {
+                            case 2:
+                                setDelay(420); // 7 minutes
+                                break;
+                            case 3:
+                                setDelay(180); // 3 minutes
+                                break;
+                            case 4:
+                                setDelay(100); // 1 minute 40 seconds
+                                break;
+                            case 5:
+                                setDelay(50); // 50 seconds
+                                break;
+                            case 6:
+                                setDelay(30); // 30 seconds
+                                break;
+                            default:
+                                setDelay(500); // Default for phase 1
+                                break;
+                        }
+                        brShrinkborder();
+                    }
+                }
+            }
+        }.runTaskTimer(plugin, 20L, 20L); // Run every second
     }
 
     public static void addGametime(int amount) {
