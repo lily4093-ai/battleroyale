@@ -94,6 +94,9 @@ public class GameManager {
                     String message = String.format("§7자기장 크기: §c%.0f §7> §c%.0f §f| §7자기장 축소 진행률: §c%.0f%% §f| §7자기장 중앙: §c( %.0f, %.0f )",
                             prevSize, currentTargetSize, perc, currentBorderCenterX, currentBorderCenterZ);
                     
+                    // DEBUG LOGGING
+                    Bukkit.getLogger().info("Sending shrinking action bar: " + message);
+
                     for (Player player : Bukkit.getOnlinePlayers()) {
                          player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
                     }
@@ -127,12 +130,16 @@ public class GameManager {
                     String message = String.format("§7자기장 크기: §c%.0f §f| §7자기장 축소까지: §c%d초 남음 §f| §7다음 자기장 중앙: §c(%.0f,%.0f)",
                             borderManager.getCurrentSize(), timeLeft, centerX, centerZ);
 
+                    // DEBUG LOGGING
+                    Bukkit.getLogger().info("Sending waiting action bar: " + message);
+
                     for (Player player : Bukkit.getOnlinePlayers()) {
                         double x = player.getLocation().getX();
                         double z = player.getLocation().getZ();
                         if (borderManager.brIsinnextborder(x, z, phase + 1)) {
                             player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
-                        } else {
+                        }
+                        else {
                             player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message + " §f| §4§l[!] 다음 자기장 바깥에 있습니다!"));
                         }
                     }
