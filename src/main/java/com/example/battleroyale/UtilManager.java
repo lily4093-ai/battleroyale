@@ -146,7 +146,6 @@ public class UtilManager implements Listener {
                 event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.AMETHYST_SHARD));
             }
         }
-        }
     }
 
     @EventHandler
