@@ -78,8 +78,8 @@ public class UtilManager implements Listener {
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
-        event.getPlayer().setMaxHealth(20.0);
-        event.getPlayer().setHealth(event.getPlayer().getMaxHealth());
+        event.getPlayer().getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).setBaseValue(20.0);
+        event.getPlayer().setHealth(event.getPlayer().getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).getBaseValue());
     }
 
     @EventHandler
@@ -87,8 +87,8 @@ public class UtilManager implements Listener {
         new BukkitRunnable() {
             @Override
             public void run() {
-                event.getPlayer().setMaxHealth(20.0);
-                event.getPlayer().setHealth(event.getPlayer().getMaxHealth());
+                event.getPlayer().getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).setBaseValue(20.0);
+                event.getPlayer().setHealth(event.getPlayer().getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).getBaseValue());
             }
         }.runTaskLater(plugin, 1L);
     }

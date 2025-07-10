@@ -1,13 +1,12 @@
 package com.example.battleroyale;
 
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
 
 public class GameManager {
 
@@ -37,14 +36,6 @@ public class GameManager {
         } else if (mode.equalsIgnoreCase("im")) {
             teamManager.teamTP(teamSize);
         }
-
-        // Give default items to all online players
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            player.getInventory().clear(); // Clear inventory first
-            for (org.bukkit.inventory.ItemStack item : plugin.getDefaultItems()) {
-                player.getInventory().addItem(item);
-            }
-        }
     }
 
     public void brBorderinit() {
@@ -62,90 +53,73 @@ public class GameManager {
 
     private void startGameLoop() {
         new BukkitRunnable() {
-            private long tickCounter = 0;
-            private long shrinkTickCounter = 0;
-
             @Override
             public void run() {
-                if (!isIngame) {
+                if (!isIngame || phase >= 7) {
                     cancel();
                     return;
                 }
-
-                tickCounter++;
-
-                if (borderManager.isShrinking()) {
-                    shrinkTickCounter++;
-
-                    double prevSize = borderManager.getShrinkStartSize();
-                    double currentTargetSize = borderManager.getCurrentSize();
-                    long totalShrinkTicks = borderManager.getTotalShrinkTicks();
-                    double currentActualSize = borderManager.getBorder().getSize();
-
-                    double perc = 0;
-                    if (totalShrinkTicks > 0) {
-                        perc = (double)shrinkTickCounter / totalShrinkTicks * 100;
-                        if (perc > 100) perc = 100;
-                    }
-                    
-                    double currentBorderCenterX = borderManager.getBorder().getCenter().getX();
-                    double currentBorderCenterZ = borderManager.getBorder().getCenter().getZ();
-
-                    String message = String.format("§7자기장 크기: §c%.0f §7> §c%.0f §f| §7자기장 축소 진행률: §c%.0f%% §f| §7자기장 중앙: §c( %.0f, %.0f )",
-                            prevSize, currentTargetSize, perc, currentBorderCenterX, currentBorderCenterZ);
-                    
-                    // DEBUG LOGGING
-                    Bukkit.getLogger().info("Sending shrinking action bar: " + message);
-
-                    for (Player player : Bukkit.getOnlinePlayers()) {
-                         player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
-                    }
-
-                } else {
-                    shrinkTickCounter = 0;
-
-                    if (tickCounter % 20 == 0) {
-                        addGametime(1);
-
-                        if (gametime >= delay) {
-                            setGametime(0);
-                            switch (phase) {
-                                case 1: setDelay(420); break;
-                                case 2: setDelay(180); break;
-                                case 3: setDelay(100); break;
-                                case 4: setDelay(50);  break;
-                                case 5: setDelay(30);  break;
-                                case 6: setDelay(30);  break;
-                            }
-                            if (phase < 7) {
-                                brShrinkborder();
-                            }
-                        }
-                    }
-                    
+                
+                if (!borderManager.isShrinking()) {
+                    addGametime(1);
                     int timeLeft = delay - gametime;
                     double nextSize = borderManager.getBorderSize(phase + 1);
-                    double centerX = borderManager.getNextBorderCenter().getX();
-                    double centerZ = borderManager.getNextBorderCenter().getZ();
-                    String message = String.format("§7자기장 크기: §c%.0f §f| §7자기장 축소까지: §c%d초 남음 §f| §7다음 자기장 중앙: §c(%.0f,%.0f)",
-                            borderManager.getCurrentSize(), timeLeft, centerX, centerZ);
-
-                    // DEBUG LOGGING
-                    Bukkit.getLogger().info("Sending waiting action bar: " + message);
-
+                    double centerX = borderManager.getNextBorderCenterX();
+                    double centerZ = borderManager.getNextBorderCenterZ();
+                    
                     for (Player player : Bukkit.getOnlinePlayers()) {
-                        double x = player.getLocation().getX();
-                        double z = player.getLocation().getZ();
-                        if (borderManager.brIsinnextborder(x, z, phase + 1)) {
-                            player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
+                        if (player.isOnline() && player.getGameMode() != GameMode.SPECTATOR) {
+                            double x = player.getLocation().getX();
+                            double z = player.getLocation().getZ();
+                            
+                            String message = String.format("§7자기장 크기: §c%.0f §f| §7자기장 축소까지: §c%d초 남음 §f| §7다음 자기장 중앙: §c(%.0f,%.0f)",
+                                    borderManager.getCurrentSize(), timeLeft, centerX, centerZ);
+                            
+                            try {
+                                if (borderManager.brIsinnextborder(x, z, phase)) {
+                                    player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
+                                } else {
+                                    player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message + " §f| §4§l현재 다음 자기장 바깥에 있습니다!"));
+                                }
+                            } catch (Exception e) {
+                                // 액션바 전송 실패 시 채팅으로 대체
+                                if (borderManager.brIsinnextborder(x, z, phase)) {
+                                    player.sendMessage(message);
+                                } else {
+                                    player.sendMessage(message + " §f| §4§l현재 다음 자기장 바깥에 있습니다!");
+                                }
+                            }
                         }
-                        else {
-                            player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message + " §f| §4§l[!] 다음 자기장 바깥에 있습니다!"));
+                    }
+                    
+                    if (gametime >= delay) {
+                        setGametime(0);
+                        // Set delays based on phase
+                        switch (phase) {
+                            case 1:
+                                setDelay(420); // 7 minutes for phase 2
+                                break;
+                            case 2:
+                                setDelay(180); // 3 minutes for phase 3
+                                break;
+                            case 3:
+                                setDelay(100); // 1 minute 40 seconds for phase 4
+                                break;
+                            case 4:
+                                setDelay(50); // 50 seconds for phase 5
+                                break;
+                            case 5:
+                                setDelay(30); // 30 seconds for phase 6
+                                break;
+                            default:
+                                setDelay(500); // Default
+                                break;
                         }
+                        brShrinkborder();
                     }
                 }
             }
-        }.runTaskTimer(plugin, 0L, 1L);
+        }.runTaskTimer(plugin, 20L, 20L); // Run every second
     }
 
     public static void addGametime(int amount) {

@@ -7,6 +7,7 @@ import org.bukkit.WorldBorder;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
+import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
@@ -27,15 +28,16 @@ public class BorderManager {
     private double borderSpeed = 3.5;
     private BossBar bossBar;
     private int currentPhase;
-    private double shrinkStartSize; // Corrected declaration location
-    private long totalShrinkTicks;  // Corrected declaration location
 
     public BorderManager() {
         this.world = Bukkit.getWorlds().get(0);
         this.border = world.getWorldBorder();
         this.bossBar = Bukkit.createBossBar("자기장", BarColor.RED, BarStyle.SOLID);
         this.bossBar.setVisible(true);
-        Bukkit.getOnlinePlayers().forEach(player -> bossBar.addPlayer(player));
+        // 모든 플레이어에게 보스바 추가
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            bossBar.addPlayer(player);
+        }
     }
 
     public double getBorderSize(int phase) {
@@ -50,6 +52,12 @@ public class BorderManager {
         currentSize = borderSizes[currentPhase];
         borderCenterX = new Random().nextInt(2001) - 1000;
         borderCenterZ = new Random().nextInt(2001) - 1000;
+        
+        // 다음 자기장 중심 미리 설정
+        Location nextCenter = makeRandomcenter(currentSize, getBorderSize(currentPhase + 1), borderCenterX, borderCenterZ);
+        nextBorderCenterX = nextCenter.getX();
+        nextBorderCenterZ = nextCenter.getZ();
+        
         borderSpeed = 1000.0;
         makeIngameborder(1, currentSize, currentSize, borderCenterX, borderCenterZ);
     }
@@ -60,13 +68,16 @@ public class BorderManager {
         Bukkit.broadcastMessage("§6[배틀로얄] §f자기장이 줄어듭니다!");
 
         long speed = Math.round((prevSize - newSize) / borderSpeed * 20);
-        this.totalShrinkTicks = speed;
-        this.shrinkStartSize = prevSize;
         setBorderCenter(prevSize, border.getCenter().getX(), border.getCenter().getZ(), centerX, centerZ, speed);
         border.setSize(newSize, (long)((prevSize - newSize) / borderSpeed));
 
         bossBar.setTitle("자기장");
         bossBar.setProgress(1.0);
+        
+        // 모든 플레이어에게 보스바 추가 (새로 접속한 플레이어를 위해)
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            bossBar.addPlayer(player);
+        }
     }
 
     public void setBorderCenter(double prevSize, double xLoc1, double zLoc1, double xLoc2, double zLoc2, long time) {
@@ -87,17 +98,33 @@ public class BorderManager {
                 
                 // 매 3초마다 (60틱) 플레이어들에게 자기장 경고 메시지 전송
                 if (loopNumber % 60 == 0) {
-                    Bukkit.getOnlinePlayers().forEach(player -> {
-                        double xc = player.getLocation().getX();
-                        double zc = player.getLocation().getZ();
-                        if (!brIsinnextborder(xc, zc, currentPhase)) {
-                            // 수정: 타이틀과 서브타이틀 파라미터 순서 변경
-                            player.sendTitle("§4§l[!] 자기장 경고", "§f자기장안으로 진입해야합니다!", 10, 40, 10);
+                    for (Player player : Bukkit.getOnlinePlayers()) {
+                        if (player.isOnline()) {
+                            double xc = player.getLocation().getX();
+                            double zc = player.getLocation().getZ();
+                            if (!brIsinnextborder(xc, zc, currentPhase)) {
+                                player.sendTitle("§f", "§4§l[!] 자기장안으로 진입해야합니다!", 0, 20, 0);
+                            }
                         }
-                    });
+                    }
                 }
                 
-                
+                // 액션바 업데이트 - 매 10틱마다
+                if (loopNumber % 10 == 0) {
+                    String actionBar = String.format("§7자기장 크기: §c%.0f §7> §c%.0f §f| §7자기장 축소 진행률: §c%.0f%% §f| §7자기장 중앙: §c( %.0f, %.0f )", 
+                        prevSize, currentSize, perc, xLoc2, zLoc2);
+                    
+                    for (Player player : Bukkit.getOnlinePlayers()) {
+                        if (player.isOnline()) {
+                            try {
+                                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(actionBar));
+                            } catch (Exception e) {
+                                // 액션바 전송 실패 시 채팅으로 대체
+                                player.sendMessage(actionBar);
+                            }
+                        }
+                    }
+                }
                 
                 if (loopNumber >= finalTime) {
                     border.setCenter(xLoc2, zLoc2);
@@ -105,10 +132,14 @@ public class BorderManager {
                     borderCenterZ = zLoc2;
                     isShrinking = false;
                     
-                    double nextSize = getBorderSize(currentPhase + 1);
-                    Location randomCenter = makeRandomcenter(currentSize, nextSize, borderCenterX, borderCenterZ);
-                    nextBorderCenterX = randomCenter.getX();
-                    nextBorderCenterZ = randomCenter.getZ();
+                    // 다음 자기장 중심 계산
+                    if (currentPhase + 1 < borderSizes.length) {
+                        double nextSize = getBorderSize(currentPhase + 1);
+                        Location randomCenter = makeRandomcenter(currentSize, nextSize, borderCenterX, borderCenterZ);
+                        nextBorderCenterX = randomCenter.getX();
+                        nextBorderCenterZ = randomCenter.getZ();
+                    }
+                    
                     bossBar.setProgress(0.0);
                     cancel();
                     return;
@@ -119,21 +150,37 @@ public class BorderManager {
                 border.setCenter(currentX, currentZ);
                 borderCenterX = currentX;
                 borderCenterZ = currentZ;
+                
+                // 보스바 진행률 업데이트
+                bossBar.setProgress(Math.max(0.0, 1.0 - ((double)loopNumber / finalTime)));
             }
         }.runTaskTimer(BattleRoyale.getPlugin(BattleRoyale.class), 1L, 1L);
     }
 
     public Location makeRandomcenter(double prevSize, double newSize, double prevCenterx, double prevCenterz) {
-        double offset = (prevSize - newSize) / 2.0;
+        double x1 = prevCenterx + (prevSize / 2);
+        double x2 = prevCenterx - (prevSize / 2);
+        double z1 = prevCenterz + (prevSize / 2);
+        double z2 = prevCenterz - (prevSize / 2);
+
+        x1 -= newSize / 2;
+        x2 += newSize / 2;
+        z1 -= newSize / 2;
+        z2 += newSize / 2;
+
         Random random = new Random();
-        double randomX = prevCenterx + (random.nextDouble() * 2 - 1) * offset;
-        double randomZ = prevCenterz + (random.nextDouble() * 2 - 1) * offset;
+        double randomX = x2 + (x1 - x2) * random.nextDouble();
+        double randomZ = z2 + (z1 - z2) * random.nextDouble();
 
         return new Location(world, randomX, 0, randomZ);
     }
 
     public boolean brIsinnextborder(double x, double z, int phase) {
-        double newSize = getBorderSize(phase);
+        if (phase + 1 >= borderSizes.length) {
+            return false;
+        }
+        
+        double newSize = getBorderSize(phase + 1);
         double centerX = nextBorderCenterX;
         double centerZ = nextBorderCenterZ;
 
@@ -142,10 +189,14 @@ public class BorderManager {
     }
 
     public void brShrinkborder() {
+        if (currentPhase == 1) borderSpeed = 1.0;      // 첫 축소는 빠르게
+        else if (currentPhase == 2) borderSpeed = 2.0;  // 점진적으로 느리게
+        else if (currentPhase == 3) borderSpeed = 3.0;
+        else if (currentPhase >= 4) borderSpeed = 5.0;  // 후반부는 더 느리게
+        
         double prevSize = currentSize;
         currentPhase = currentPhase + 1;
         double newSize = getBorderSize(currentPhase);
-        borderSpeed = 3.5;
         currentSize = newSize;
         makeIngameborder(currentPhase, newSize, prevSize, nextBorderCenterX, nextBorderCenterZ);
     }
@@ -177,6 +228,11 @@ public class BorderManager {
         return tempLoc;
     }
 
+    // 플레이어가 새로 접속했을 때 보스바 추가
+    public void addPlayerToBossBar(Player player) {
+        bossBar.addPlayer(player);
+    }
+
     public WorldBorder getBorder() {
         return border;
     }
@@ -201,11 +257,19 @@ public class BorderManager {
         return bossBar;
     }
 
-    public double getShrinkStartSize() {
-        return shrinkStartSize;
+    public double getBorderCenterX() {
+        return borderCenterX;
     }
 
-    public long getTotalShrinkTicks() {
-        return totalShrinkTicks;
+    public double getBorderCenterZ() {
+        return borderCenterZ;
+    }
+
+    public double getNextBorderCenterX() {
+        return nextBorderCenterX;
+    }
+
+    public double getNextBorderCenterZ() {
+        return nextBorderCenterZ;
     }
 }
