@@ -55,26 +55,26 @@ public class GameManager {
         new BukkitRunnable() {
             @Override
             public void run() {
-                if (!isIngame || phase >= 7) {
+                if (!isIngame) {
+                    cancel();
                     return;
                 }
-                
+
                 if (!borderManager.isShrinking()) {
                     addGametime(1);
                     int timeLeft = delay - gametime;
                     double nextSize = borderManager.getBorderSize(phase + 1);
                     double centerX = borderManager.getNextBorderCenterX();
                     double centerZ = borderManager.getNextBorderCenterZ();
-                    
+
                     for (Player player : Bukkit.getOnlinePlayers()) {
                         if (player.isOnline() && player.getGameMode() != GameMode.SPECTATOR) {
                             double x = player.getLocation().getX();
                             double z = player.getLocation().getZ();
-                            
+
                             String message = String.format("§7자기장 크기: §c%.0f §f| §7자기장 축소까지: §c%d초 남음 §f| §7다음 자기장 중앙: §c(%.0f,%.0f)",
                                     borderManager.getCurrentSize(), timeLeft, centerX, centerZ);
-                            
-                            // 액션바 전송 방식 수정
+
                             if (borderManager.brIsinnextborder(x, z, phase)) {
                                 player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(message));
                             } else {
@@ -82,31 +82,35 @@ public class GameManager {
                             }
                         }
                     }
-                    
+
                     if (gametime >= delay) {
-                        setGametime(0);
-                        // Set delays based on phase
+                        if (phase >= 6) { // Last phase finished, handle draw
+                            Bukkit.broadcastMessage("§a무승부! 게임이 종료됩니다.");
+                            setIngame(false);
+                            return;
+                        }
+
+                        brShrinkborder(); // Shrinks the border and increments phase
+                        setGametime(0);   // Reset timer for the new phase
+
+                        // Set delay for the new, current phase
                         switch (phase) {
-                            case 1:
-                                setDelay(420); // 7 minutes for phase 2
-                                break;
                             case 2:
-                                setDelay(180); // 3 minutes for phase 3
+                                setDelay(420); // 7 minutes
                                 break;
                             case 3:
-                                setDelay(100); // 1 minute 40 seconds for phase 4
+                                setDelay(180); // 3 minutes
                                 break;
                             case 4:
-                                setDelay(50); // 50 seconds for phase 5
+                                setDelay(100); // 1 minute 40 seconds
                                 break;
                             case 5:
-                                setDelay(30); // 30 seconds for phase 6
+                                setDelay(50);  // 50 seconds
                                 break;
-                            default:
-                                setDelay(500); // Default
+                            case 6:
+                                setDelay(30);  // 30 seconds
                                 break;
                         }
-                        brShrinkborder();
                     }
                 }
             }
