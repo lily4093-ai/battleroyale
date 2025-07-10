@@ -40,6 +40,10 @@ public class BorderManager {
     public BorderManager() {
         this.world = Bukkit.getWorlds().get(0);
         this.border = world.getWorldBorder();
+        this.currentSize = borderSizes[0]; // Set initial size to the first value in borderSizes array
+        this.borderCenterX = 0; // Default center X
+        this.borderCenterZ = 0; // Default center Z
+        
         // Initialize BossBars for currently online players
         for (Player player : Bukkit.getOnlinePlayers()) {
             addPlayerToBossBar(player);
@@ -124,7 +128,7 @@ public class BorderManager {
                 if (loopNumber % 60 == 0) {
                     for (Player player : Bukkit.getOnlinePlayers()) {
                         if (player.isOnline()) {
-                            if (!brIsinnextborder(player.getLocation().getX(), player.getLocation().getZ(), currentPhase)) {
+                            if (!brIsinCurrentBorder(player.getLocation().getX(), player.getLocation().getZ())) {
                                 player.sendTitle("§c§l위험!", "§4§l[!] 자기장 안으로 진입해야 합니다!", 10, 40, 10);
                             }
                         }
@@ -167,11 +171,10 @@ public class BorderManager {
         return new Location(world, randomX, 0, randomZ);
     }
 
-    public boolean brIsinnextborder(double x, double z, int phase) {
-        if (phase + 1 >= borderSizes.length) return false;
-        double newSize = getBorderSize(phase + 1);
-        return x >= (nextBorderCenterX - newSize / 2) && x <= (nextBorderCenterX + newSize / 2) &&
-               z >= (nextBorderCenterZ - newSize / 2) && z <= (nextBorderCenterZ + newSize / 2);
+    public boolean brIsinCurrentBorder(double x, double z) {
+        double halfSize = currentSize / 2;
+        return x >= (borderCenterX - halfSize) && x <= (borderCenterX + halfSize) &&
+               z >= (borderCenterZ - halfSize) && z <= (borderCenterZ + halfSize);
     }
 
     public void brShrinkborder() {
@@ -264,6 +267,7 @@ public class BorderManager {
 
         double playerX = player.getLocation().getX();
         double playerZ = player.getLocation().getZ();
+        double playerYaw = player.getLocation().getYaw();
 
         // Chebyshev distance for square border
         double dx = Math.abs(playerX - borderCenterX);
@@ -279,13 +283,30 @@ public class BorderManager {
         else if (progress > 0.1) color = BarColor.RED;
         else color = BarColor.PURPLE;
 
+        String directionArrow = getDirectionArrow(playerX, playerZ, playerYaw, borderCenterX, borderCenterZ);
+
         String title = (distance <= halfSize)
-                ? String.format("자기장 중심까지: %.0fm (크기: %.0fm)", distance, borderSize)
-                : String.format("§c자기장 밖! 중심까지: %.0fm (크기: %.0fm)", distance, borderSize);
+                ? String.format("자기장 중심까지: %.0fm (크기: %.0fm) %s", distance, borderSize, directionArrow)
+                : String.format("§c자기장 밖! 중심까지: %.0fm (크기: %.0fm) %s", distance, borderSize, directionArrow);
 
         bar.setColor(color);
         bar.setTitle(title);
         bar.setProgress(Math.max(0.0, Math.min(1.0, progress)));
+    }
+
+    private String getDirectionArrow(double playerX, double playerZ, double playerYaw, double targetX, double targetZ) {
+        double angle = Math.toDegrees(Math.atan2(targetZ - playerZ, targetX - playerX)) - playerYaw;
+        angle = (angle + 360) % 360;
+
+        if (angle >= 337.5 || angle < 22.5) return "↑"; // North
+        else if (angle >= 22.5 && angle < 67.5) return "↗"; // North-East
+        else if (angle >= 67.5 && angle < 112.5) return "→"; // East
+        else if (angle >= 112.5 && angle < 157.5) return "↘"; // South-East
+        else if (angle >= 157.5 && angle < 202.5) return "↓"; // South
+        else if (angle >= 202.5 && angle < 247.5) return "↙"; // South-West
+        else if (angle >= 247.5 && angle < 292.5) return "←"; // West
+        else if (angle >= 292.5 && angle < 337.5) return "↖"; // North-West
+        return "";
     }
 
     public void updateBossBarWhileWaiting() {

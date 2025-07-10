@@ -28,25 +28,24 @@ public class UtilManager implements Listener {
     private BorderManager borderManager;
     private List<Material> disabledCrafting;
 
-    // 현재는 4분마다 고정, 스크립트에서는 "every 4 minute"이지만 게임 상황에 따라 조정 가능
     public UtilManager(BattleRoyale plugin, BorderManager borderManager) {
-        // 보급 드랍 타이밍을 게임 페이즈에 맞춰 조정
+        this.plugin = plugin;
+        this.borderManager = borderManager;
+        this.disabledCrafting = Arrays.asList(
+                Material.ENCHANTED_GOLDEN_APPLE,
+                Material.END_CRYSTAL,
+                Material.RESPAWN_ANCHOR,
+                Material.TOTEM_OF_UNDYING
+        );
+
         new BukkitRunnable() {
             @Override
             public void run() {
-                if (GameManager.isIngame() && GameManager.getPhase() >= 1 && GameManager.getPhase() <= 6) {
-                    // 페이즈별로 다른 보급 주기 설정 가능
-                    int phase = GameManager.getPhase();
-                    if (phase <= 2) {
-                        spawnSupplyDrop(); // 초반에는 4분마다
-                    } else if (phase <= 4) {
-                        // 중반에는 3분마다로 변경하려면 별도 타이머 필요
-                    } else {
-                        // 후반에는 2분마다로 변경하려면 별도 타이머 필요
-                    }
+                if (GameManager.isIngame() && GameManager.getPhase() >= 1) {
+                    spawnSupplyDrop();
                 }
             }
-        }.runTaskTimer(plugin, 20L * 60 * 4, 20L * 60 * 4);
+        }.runTaskTimer(plugin, 20L * 60 * 4, 20L * 60 * 4); // Every 4 minutes
     }
 
     public void updateCompass(Location target) {
@@ -56,16 +55,24 @@ public class UtilManager implements Listener {
     }
 
     public void spawnSupplyDrop() {
-        Location spawnLoc = borderManager.makeRandomcenter(borderManager.getCurrentSize(), 10, borderManager.getNextBorderCenter().getX(), borderManager.getNextBorderCenter().getZ());
-        spawnLoc.setY(256);
-        while (spawnLoc.getBlock().getType() == Material.AIR && spawnLoc.getY() > 0) {
+        Random random = new Random();
+        double currentBorderRadius = borderManager.getCurrentSize() / 2;
+        double centerX = borderManager.getBorderCenterX();
+        double centerZ = borderManager.getBorderCenterZ();
+
+        // Calculate random spawn location within the current border
+        double spawnX = centerX + (random.nextDouble() * 2 - 1) * currentBorderRadius;
+        double spawnZ = centerZ + (random.nextDouble() * 2 - 1) * currentBorderRadius;
+
+        Location spawnLoc = new Location(borderManager.getBorder().getWorld(), spawnX, 256, spawnZ);
+        // Find the highest non-air block
+        while (spawnLoc.getBlockY() > 0 && spawnLoc.getBlock().getType().isAir()) {
             spawnLoc.subtract(0, 1, 0);
         }
-        spawnLoc.add(0, 1, 0);
+        spawnLoc.add(0, 1, 0); // Move up one block to be on top of the ground
 
         spawnLoc.getBlock().setType(Material.CHEST);
         Chest chest = (Chest) spawnLoc.getBlock().getState();
-        Random random = new Random();
         chest.getInventory().setItem(0, new ItemStack(Material.BLAZE_ROD, random.nextInt(5) + 1));
         chest.getInventory().setItem(1, new ItemStack(Material.NETHERITE_INGOT, random.nextInt(2) + 1));
         chest.getInventory().setItem(2, new ItemStack(Material.QUARTZ, random.nextInt(6) + 5));
