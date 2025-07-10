@@ -12,7 +12,10 @@ import org.bukkit.scheduler.BukkitRunnable;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
+import java.util.UUID;
 
 public class BorderManager {
 
@@ -25,19 +28,18 @@ public class BorderManager {
     private double nextBorderCenterX;
     private double nextBorderCenterZ;
     private boolean isShrinking = false;
-    private double borderSpeed = 3.5;
-    private BossBar bossBar;
+    private double borderSpeed = 1.0;
+    private final Map<UUID, BossBar> playerBossBars = new HashMap<>(); // Changed to a Map
     private int currentPhase;
 
     public BorderManager() {
         this.world = Bukkit.getWorlds().get(0);
         this.border = world.getWorldBorder();
-        this.bossBar = Bukkit.createBossBar("자기장", BarColor.RED, BarStyle.SOLID);
-        this.bossBar.setVisible(true);
-        // 모든 플레이어에게 보스바 추가
+        // Initialize BossBars for currently online players
         for (Player player : Bukkit.getOnlinePlayers()) {
-            bossBar.addPlayer(player);
+            addPlayerToBossBar(player);
         }
+        updateBossBarWhileWaiting(); // Start the waiting updater
     }
 
     public double getBorderSize(int phase) {
@@ -52,13 +54,12 @@ public class BorderManager {
         currentSize = borderSizes[currentPhase];
         borderCenterX = new Random().nextInt(2001) - 1000;
         borderCenterZ = new Random().nextInt(2001) - 1000;
-        
-        // 다음 자기장 중심 미리 설정
+
         Location nextCenter = makeRandomcenter(currentSize, getBorderSize(currentPhase + 1), borderCenterX, borderCenterZ);
         nextBorderCenterX = nextCenter.getX();
         nextBorderCenterZ = nextCenter.getZ();
-        
-        borderSpeed = 1000.0;
+
+        borderSpeed = 1000.0; // Fast for initial setup
         makeIngameborder(1, currentSize, currentSize, borderCenterX, borderCenterZ);
     }
 
@@ -67,72 +68,32 @@ public class BorderManager {
         currentSize = newSize;
         Bukkit.broadcastMessage("§6[배틀로얄] §f자기장이 줄어듭니다!");
 
-        long speed = Math.round((prevSize - newSize) / borderSpeed * 20);
-        setBorderCenter(prevSize, border.getCenter().getX(), border.getCenter().getZ(), centerX, centerZ, speed);
+        long shrinkDurationTicks = (long) ((prevSize - newSize) / borderSpeed * 20);
         border.setSize(newSize, (long)((prevSize - newSize) / borderSpeed));
-
-        bossBar.setTitle("자기장");
-        bossBar.setProgress(1.0);
-        
-        // 모든 플레이어에게 보스바 추가 (새로 접속한 플레이어를 위해)
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            bossBar.addPlayer(player);
-        }
+        setBorderCenter(prevSize, border.getCenter().getX(), border.getCenter().getZ(), centerX, centerZ, shrinkDurationTicks);
     }
 
     public void setBorderCenter(double prevSize, double xLoc1, double zLoc1, double xLoc2, double zLoc2, long time) {
         isShrinking = true;
-        final long finalTime = Math.round(time);
-        
+        final long finalTime = Math.max(1, time); // Ensure time is at least 1 to avoid division by zero
+
         new BukkitRunnable() {
             double currentX = xLoc1;
             double currentZ = zLoc1;
-            double xStep = (xLoc2 - xLoc1) / finalTime;
-            double zStep = (zLoc2 - zLoc1) / finalTime;
+            double xStep = (finalTime > 0) ? (xLoc2 - xLoc1) / finalTime : 0;
+            double zStep = (finalTime > 0) ? (zLoc2 - zLoc1) / finalTime : 0;
             long loopNumber = 0;
 
             @Override
             public void run() {
-                loopNumber++;
-                double perc = Math.round((double)loopNumber / finalTime * 100);
-                
-                // 매 3초마다 (60틱) 플레이어들에게 자기장 경고 메시지 전송
-                if (loopNumber % 60 == 0) {
-                    for (Player player : Bukkit.getOnlinePlayers()) {
-                        if (player.isOnline()) {
-                            double xc = player.getLocation().getX();
-                            double zc = player.getLocation().getZ();
-                            if (!brIsinnextborder(xc, zc, currentPhase)) {
-                                player.sendTitle("§f", "§4§l[!] 자기장안으로 진입해야합니다!", 0, 20, 0);
-                            }
-                        }
-                    }
-                }
-                
-                // 액션바 업데이트 - 매 10틱마다
-                if (loopNumber % 10 == 0) {
-                    String actionBar = String.format("§7자기장 크기: §c%.0f §7> §c%.0f §f| §7자기장 축소 진행률: §c%.0f%% §f| §7자기장 중앙: §c( %.0f, %.0f )", 
-                        prevSize, currentSize, perc, xLoc2, zLoc2);
-                    
-                    for (Player player : Bukkit.getOnlinePlayers()) {
-                        if (player.isOnline()) {
-                            try {
-                                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(actionBar));
-                            } catch (Exception e) {
-                                // 액션바 전송 실패 시 채팅으로 대체
-                                player.sendMessage(actionBar);
-                            }
-                        }
-                    }
-                }
-                
                 if (loopNumber >= finalTime) {
                     border.setCenter(xLoc2, zLoc2);
                     borderCenterX = xLoc2;
                     borderCenterZ = zLoc2;
                     isShrinking = false;
-                    
-                    // 다음 자기장 중심 계산
+
+                    Bukkit.broadcastMessage("§6[배틀로얄] §a자기장 축소가 완료되었습니다!");
+
                     if (currentPhase + 1 < borderSizes.length) {
                         double nextSize = getBorderSize(currentPhase + 1);
                         Location randomCenter = makeRandomcenter(currentSize, nextSize, borderCenterX, borderCenterZ);
@@ -140,9 +101,41 @@ public class BorderManager {
                         nextBorderCenterZ = randomCenter.getZ();
                     }
                     
-                    bossBar.setProgress(0.0);
+                    updateBossBarWhileWaiting(); // Restart waiting updater
                     cancel();
                     return;
+                }
+
+                loopNumber++;
+                double progress = (double) loopNumber / finalTime;
+                double progressPercent = Math.round(progress * 100);
+                double currentBorderSize = prevSize - ((prevSize - currentSize) * progress);
+
+                if (loopNumber % 60 == 0) {
+                    for (Player player : Bukkit.getOnlinePlayers()) {
+                        if (player.isOnline()) {
+                            if (!brIsinnextborder(player.getLocation().getX(), player.getLocation().getZ(), currentPhase)) {
+                                player.sendTitle("§c§l위험!", "§4§l[!] 자기장 안으로 진입해야 합니다!", 10, 40, 10);
+                            }
+                        }
+                    }
+                }
+
+                if (loopNumber % 10 == 0) {
+                    String actionBar = String.format("§7자기장 크기: §c%.0f §7→ §c%.0f §f| §7축소 진행률: §c%.0f%% §f| §7자기장 중심: §c(%.0f, %.0f) §f| §7현재 크기: §e%.0f",
+                            prevSize, currentSize, progressPercent, xLoc2, zLoc2, currentBorderSize);
+
+                    for (Player player : Bukkit.getOnlinePlayers()) {
+                        if (player.isOnline()) {
+                            player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(actionBar));
+                        }
+                    }
+                    updateBossBarForAllPlayers(currentBorderSize);
+                }
+                
+                if (loopNumber == finalTime / 4 || loopNumber == finalTime / 2 || loopNumber == (finalTime * 3) / 4) {
+                    String message = String.format("§6[배틀로얄] §f자기장 축소 §c%.0f%% §f완료!", progressPercent);
+                    Bukkit.broadcastMessage(message);
                 }
 
                 currentX += xStep;
@@ -150,126 +143,122 @@ public class BorderManager {
                 border.setCenter(currentX, currentZ);
                 borderCenterX = currentX;
                 borderCenterZ = currentZ;
-                
-                // 보스바 진행률 업데이트
-                bossBar.setProgress(Math.max(0.0, 1.0 - ((double)loopNumber / finalTime)));
             }
         }.runTaskTimer(BattleRoyale.getPlugin(BattleRoyale.class), 1L, 1L);
     }
 
     public Location makeRandomcenter(double prevSize, double newSize, double prevCenterx, double prevCenterz) {
-        double x1 = prevCenterx + (prevSize / 2);
-        double x2 = prevCenterx - (prevSize / 2);
-        double z1 = prevCenterz + (prevSize / 2);
-        double z2 = prevCenterz - (prevSize / 2);
-
-        x1 -= newSize / 2;
-        x2 += newSize / 2;
-        z1 -= newSize / 2;
-        z2 += newSize / 2;
-
+        double maxDist = (prevSize - newSize) / 2;
         Random random = new Random();
-        double randomX = x2 + (x1 - x2) * random.nextDouble();
-        double randomZ = z2 + (z1 - z2) * random.nextDouble();
-
+        double angle = random.nextDouble() * 2 * Math.PI;
+        double dist = random.nextDouble() * maxDist;
+        double randomX = prevCenterx + Math.cos(angle) * dist;
+        double randomZ = prevCenterz + Math.sin(angle) * dist;
         return new Location(world, randomX, 0, randomZ);
     }
 
     public boolean brIsinnextborder(double x, double z, int phase) {
-        if (phase + 1 >= borderSizes.length) {
-            return false;
-        }
-        
+        if (phase + 1 >= borderSizes.length) return false;
         double newSize = getBorderSize(phase + 1);
-        double centerX = nextBorderCenterX;
-        double centerZ = nextBorderCenterZ;
-
-        return x >= (centerX - newSize / 2) && x <= (centerX + newSize / 2) &&
-               z >= (centerZ - newSize / 2) && z <= (centerZ + newSize / 2);
+        return x >= (nextBorderCenterX - newSize / 2) && x <= (nextBorderCenterX + newSize / 2) &&
+               z >= (nextBorderCenterZ - newSize / 2) && z <= (centerZ - newSize / 2);
     }
 
     public void brShrinkborder() {
-        if (currentPhase == 1) borderSpeed = 1.0;      // 첫 축소는 빠르게
-        else if (currentPhase == 2) borderSpeed = 2.0;  // 점진적으로 느리게
-        else if (currentPhase == 3) borderSpeed = 3.0;
-        else if (currentPhase >= 4) borderSpeed = 5.0;  // 후반부는 더 느리게
-        
+        if (currentPhase == 1) borderSpeed = 0.5;
+        else if (currentPhase == 2) borderSpeed = 0.7;
+        else if (currentPhase == 3) borderSpeed = 1.0;
+        else if (currentPhase == 4) borderSpeed = 1.5;
+        else if (currentPhase >= 5) borderSpeed = 2.0;
+
         double prevSize = currentSize;
-        currentPhase = currentPhase + 1;
+        currentPhase++;
         double newSize = getBorderSize(currentPhase);
-        currentSize = newSize;
         makeIngameborder(currentPhase, newSize, prevSize, nextBorderCenterX, nextBorderCenterZ);
     }
 
     public Location brGetspawnloc(String type) {
         double space = 500;
-        double x = 0;
-        double z = 0;
-
-        if (type.equals("++")) {
-            x = borderCenterX + (currentSize / 2) - space;
-            z = borderCenterZ + (currentSize / 2) - space;
-        } else if (type.equals("--")) {
-            x = borderCenterX - (currentSize / 2) + space;
-            z = borderCenterZ - (currentSize / 2) + space;
-        } else if (type.equals("+-")) {
-            x = borderCenterX + (currentSize / 2) - space;
-            z = borderCenterZ - (currentSize / 2) + space;
-        } else if (type.equals("-+")) {
-            x = borderCenterX - (currentSize / 2) + space;
-            z = borderCenterZ + (currentSize / 2) - space;
-        }
-
+        double x = 0, z = 0;
+        if (type.equals("++")) { x = borderCenterX + (currentSize / 2) - space; z = borderCenterZ + (currentSize / 2) - space; }
+        else if (type.equals("--")) { x = borderCenterX - (currentSize / 2) + space; z = borderCenterZ - (currentSize / 2) + space; }
+        else if (type.equals("+-")) { x = borderCenterX + (currentSize / 2) - space; z = borderCenterZ - (currentSize / 2) + space; }
+        else if (type.equals("-+")) { x = borderCenterX - (currentSize / 2) + space; z = borderCenterZ + (currentSize / 2) - space; }
         Location tempLoc = new Location(world, x, 256, z);
-        while (tempLoc.getBlock().getType().isAir() && tempLoc.getY() > 0) {
+        while (tempLoc.getBlockY() > 0 && tempLoc.getBlock().getType().isAir()) {
             tempLoc.subtract(0, 1, 0);
         }
         tempLoc.add(0, 1, 0);
         return tempLoc;
     }
 
-    // 플레이어가 새로 접속했을 때 보스바 추가
+    private void updateBossBarForAllPlayers(double currentBorderSize) {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            updateBossBarForPlayer(player, currentBorderSize);
+        }
+    }
+
+    private void updateBossBarForPlayer(Player player, double borderSize) {
+        BossBar bar = playerBossBars.get(player.getUniqueId());
+        if (bar == null) return;
+
+        double playerX = player.getLocation().getX();
+        double playerZ = player.getLocation().getZ();
+        double distance = Math.sqrt(Math.pow(playerX - borderCenterX, 2) + Math.pow(playerZ - borderCenterZ, 2));
+        double radius = borderSize / 2;
+        double progress = (distance <= radius) ? 1.0 - (distance / radius) : 0.0;
+
+        BarColor color;
+        if (progress > 0.7) color = BarColor.GREEN;
+        else if (progress > 0.4) color = BarColor.YELLOW;
+        else if (progress > 0.1) color = BarColor.RED;
+        else color = BarColor.PURPLE;
+
+        String title = (distance <= radius)
+                ? String.format("자기장 중심까지: %.0fm (반지름: %.0fm)", distance, radius)
+                : String.format("§c자기장 밖! 중심까지: %.0fm (반지름: %.0fm)", distance, radius);
+
+        bar.setColor(color);
+        bar.setTitle(title);
+        bar.setProgress(Math.max(0.0, Math.min(1.0, progress)));
+    }
+
+    public void updateBossBarWhileWaiting() {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (isShrinking) {
+                    cancel();
+                    return;
+                }
+                updateBossBarForAllPlayers(currentSize);
+            }
+        }.runTaskTimer(BattleRoyale.getPlugin(BattleRoyale.class), 0L, 20L);
+    }
+
     public void addPlayerToBossBar(Player player) {
-        bossBar.addPlayer(player);
+        BossBar bar = Bukkit.createBossBar("", BarColor.BLUE, BarStyle.SOLID);
+        bar.addPlayer(player);
+        playerBossBars.put(player.getUniqueId(), bar);
+        updateBossBarForPlayer(player, currentSize);
     }
 
-    public WorldBorder getBorder() {
-        return border;
+    public void removePlayerFromBossBar(Player player) {
+        BossBar bar = playerBossBars.remove(player.getUniqueId());
+        if (bar != null) {
+            bar.removeAll();
+        }
     }
-
-    public double getCurrentSize() {
-        return currentSize;
-    }
-
-    public void setCurrentSize(double currentSize) {
-        this.currentSize = currentSize;
-    }
-
-    public Location getNextBorderCenter() {
-        return new Location(this.world, nextBorderCenterX, 0, nextBorderCenterZ);
-    }
-
-    public boolean isShrinking() {
-        return isShrinking;
-    }
-
-    public BossBar getBossBar() {
-        return bossBar;
-    }
-
-    public double getBorderCenterX() {
-        return borderCenterX;
-    }
-
-    public double getBorderCenterZ() {
-        return borderCenterZ;
-    }
-
-    public double getNextBorderCenterX() {
-        return nextBorderCenterX;
-    }
-
-    public double getNextBorderCenterZ() {
-        return nextBorderCenterZ;
-    }
+    
+    // Getters
+    public WorldBorder getBorder() { return border; }
+    public double getCurrentSize() { return currentSize; }
+    public void setCurrentSize(double currentSize) { this.currentSize = currentSize; }
+    public Location getNextBorderCenter() { return new Location(this.world, nextBorderCenterX, 0, nextBorderCenterZ); }
+    public boolean isShrinking() { return isShrinking; }
+    public double getBorderCenterX() { return borderCenterX; }
+    public double getBorderCenterZ() { return borderCenterZ; }
+    public double getNextBorderCenterX() { return nextBorderCenterX; }
+    public double getNextBorderCenterZ() { return nextBorderCenterZ; }
+    
 }
