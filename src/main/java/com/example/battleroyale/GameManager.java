@@ -1,5 +1,7 @@
 package com.example.battleroyale;
 
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -73,28 +75,10 @@ public class GameManager {
                                     borderManager.getCurrentSize(), timeLeft, centerX, centerZ);
                             
                             // 액션바 전송 방식 수정
-                            try {
-                                if (borderManager.brIsinnextborder(x, z, phase)) {
-                                    player.sendActionBar(message);
-                                } else {
-                                    player.sendActionBar(message + " §f| §4§l현재 다음 자기장 바깥에 있습니다!");
-                                }
-                            } catch (Exception e) {
-                                // 액션바 전송 실패 시 타이틀로 대체
-                                try {
-                                    if (borderManager.brIsinnextborder(x, z, phase)) {
-                                        player.sendTitle("", message, 0, 20, 0);
-                                    } else {
-                                        player.sendTitle("", message + " §f| §4§l현재 다음 자기장 바깥에 있습니다!", 0, 20, 0);
-                                    }
-                                } catch (Exception ex) {
-                                    // 타이틀도 실패하면 채팅으로 대체
-                                    if (borderManager.brIsinnextborder(x, z, phase)) {
-                                        player.sendMessage(message);
-                                    } else {
-                                        player.sendMessage(message + " §f| §4§l현재 다음 자기장 바깥에 있습니다!");
-                                    }
-                                }
+                            if (borderManager.brIsinnextborder(x, z, phase)) {
+                                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(message));
+                            } else {
+                                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(message + " §f| §4§l현재 다음 자기장 바깥에 있습니다!"));
                             }
                         }
                     }
