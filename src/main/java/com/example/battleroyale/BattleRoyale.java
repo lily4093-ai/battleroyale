@@ -265,10 +265,7 @@ public final class BattleRoyale extends JavaPlugin implements Listener {
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        
-        // 보스바에 플레이어 추가
-        borderManager.addPlayerToBossBar(player);
-        
+        borderManager.addPlayerToBossBar(player); // Add player to BossBar on join
         if (GameManager.isIngame() && deadPlayers.contains(player.getUniqueId())) {
             player.setGameMode(GameMode.SPECTATOR);
             player.sendMessage("§6[배틀로얄] §f당신은 이전에 사망하여 관전 모드로 접속했습니다.");
@@ -278,9 +275,9 @@ public final class BattleRoyale extends JavaPlugin implements Listener {
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
+        borderManager.removePlayerFromBossBar(player); // Remove player from BossBar on quit
         if (GameManager.isIngame() && player.getGameMode() != GameMode.SPECTATOR) {
             deadPlayers.add(player.getUniqueId());
-            player.setGameMode(GameMode.SPECTATOR);
             Integer teamNumber = teamManager.getPlayerTeams().get(player);
             if (teamNumber != null) {
                 if (teamManager.isTeamEliminated(teamNumber)) {

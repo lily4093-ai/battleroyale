@@ -29,8 +29,13 @@ public class BorderManager {
     private double nextBorderCenterZ;
     private boolean isShrinking = false;
     private double borderSpeed = 1.0;
-    private final Map<UUID, BossBar> playerBossBars = new HashMap<>(); // Changed to a Map
+    private final Map<UUID, BossBar> playerBossBars = new HashMap<>();
     private int currentPhase;
+    
+    // 타이머 관련 변수들
+    private int countdownSeconds = 0;
+    private BukkitRunnable countdownTask;
+    private boolean isCountdownActive = false;
 
     public BorderManager() {
         this.world = Bukkit.getWorlds().get(0);
@@ -68,6 +73,9 @@ public class BorderManager {
         currentSize = newSize;
         Bukkit.broadcastMessage("§6[배틀로얄] §f자기장이 줄어듭니다!");
 
+        // 카운트다운 중지
+        stopCountdown();
+
         long shrinkDurationTicks = (long) ((prevSize - newSize) / borderSpeed * 20);
         border.setSize(newSize, (long)((prevSize - newSize) / borderSpeed));
         setBorderCenter(prevSize, border.getCenter().getX(), border.getCenter().getZ(), centerX, centerZ, shrinkDurationTicks);
@@ -75,7 +83,7 @@ public class BorderManager {
 
     public void setBorderCenter(double prevSize, double xLoc1, double zLoc1, double xLoc2, double zLoc2, long time) {
         isShrinking = true;
-        final long finalTime = Math.max(1, time); // Ensure time is at least 1 to avoid division by zero
+        final long finalTime = Math.max(1, time);
 
         new BukkitRunnable() {
             double currentX = xLoc1;
@@ -101,7 +109,9 @@ public class BorderManager {
                         nextBorderCenterZ = randomCenter.getZ();
                     }
                     
-                    updateBossBarWhileWaiting(); // Restart waiting updater
+                    // 자기장 축소 완료 후 다음 축소까지 대기 시간 설정 (예: 60초)
+                    startCountdown(60);
+                    updateBossBarWhileWaiting();
                     cancel();
                     return;
                 }
@@ -161,7 +171,7 @@ public class BorderManager {
         if (phase + 1 >= borderSizes.length) return false;
         double newSize = getBorderSize(phase + 1);
         return x >= (nextBorderCenterX - newSize / 2) && x <= (nextBorderCenterX + newSize / 2) &&
-               z >= (nextBorderCenterZ - newSize / 2) && z <= (centerZ - newSize / 2);
+               z >= (nextBorderCenterZ - newSize / 2) && z <= (nextBorderCenterZ + newSize / 2);
     }
 
     public void brShrinkborder() {
@@ -190,6 +200,56 @@ public class BorderManager {
         }
         tempLoc.add(0, 1, 0);
         return tempLoc;
+    }
+
+    // 카운트다운 시작
+    public void startCountdown(int seconds) {
+        stopCountdown(); // 기존 카운트다운 중지
+        countdownSeconds = seconds;
+        isCountdownActive = true;
+        
+        countdownTask = new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (countdownSeconds <= 0) {
+                    isCountdownActive = false;
+                    // 자동으로 다음 자기장 축소 시작
+                    if (currentPhase + 1 < borderSizes.length) {
+                        brShrinkborder();
+                    }
+                    cancel();
+                    return;
+                }
+                
+                // 카운트다운 중 액션바 업데이트
+                updateCountdownActionBar();
+                countdownSeconds--;
+            }
+        };
+        countdownTask.runTaskTimer(BattleRoyale.getPlugin(BattleRoyale.class), 0L, 20L);
+    }
+
+    // 카운트다운 중지
+    public void stopCountdown() {
+        if (countdownTask != null) {
+            countdownTask.cancel();
+            countdownTask = null;
+        }
+        isCountdownActive = false;
+    }
+
+    // 카운트다운 중 액션바 업데이트
+    private void updateCountdownActionBar() {
+        if (!isCountdownActive) return;
+        
+        String actionBar = String.format("§7자기장 크기: §c%.0f §f| §7자기장 축소까지: §c%d초 남음 §f| §7다음 자기장 중앙: §c(%.0f,%.0f)",
+                currentSize, countdownSeconds, nextBorderCenterX, nextBorderCenterZ);
+
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (player.isOnline()) {
+                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(actionBar));
+            }
+        }
     }
 
     private void updateBossBarForAllPlayers(double currentBorderSize) {
@@ -231,7 +291,13 @@ public class BorderManager {
                     cancel();
                     return;
                 }
-                updateBossBarForAllPlayers(currentSize);
+                
+                // 카운트다운 중이면 액션바만 업데이트하고 보스바는 그대로 유지
+                if (isCountdownActive) {
+                    updateCountdownActionBar();
+                } else {
+                    updateBossBarForAllPlayers(currentSize);
+                }
             }
         }.runTaskTimer(BattleRoyale.getPlugin(BattleRoyale.class), 0L, 20L);
     }
@@ -249,6 +315,11 @@ public class BorderManager {
             bar.removeAll();
         }
     }
+
+    // 수동으로 카운트다운 시작하는 메서드 (필요시 사용)
+    public void startManualCountdown(int seconds) {
+        startCountdown(seconds);
+    }
     
     // Getters
     public WorldBorder getBorder() { return border; }
@@ -260,5 +331,7 @@ public class BorderManager {
     public double getBorderCenterZ() { return borderCenterZ; }
     public double getNextBorderCenterX() { return nextBorderCenterX; }
     public double getNextBorderCenterZ() { return nextBorderCenterZ; }
+    public int getCountdownSeconds() { return countdownSeconds; }
+    public boolean isCountdownActive() { return isCountdownActive; }
     
 }
