@@ -220,7 +220,7 @@ public final class BattleRoyale extends JavaPlugin implements Listener {
 
         if (brokenBlock == Material.DEEPSLATE_IRON_ORE) {
             droppedItem = new ItemStack(Material.IRON_INGOT);
-        } else if (brokenBlock == Material.DEEPSLATE_GOLD_ORE) {
+        } else if (brokenBlock == Material.GOLD_ORE || brokenBlock == Material.DEEPSLATE_GOLD_ORE) {
             droppedItem = new ItemStack(Material.GOLD_INGOT);
         } else if (brokenBlock == Material.DEEPSLATE_COPPER_ORE) {
             droppedItem = new ItemStack(Material.COPPER_INGOT);
