@@ -141,7 +141,11 @@ public class UtilManager implements Listener {
         } else if (blockType == Material.SAND) {
             event.setCancelled(true);
             event.getBlock().setType(Material.AIR);
-            event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.GLASS));
+            Random random = new Random();
+            if (random.nextDouble() < 0.20) { // 20% chance
+                event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.AMETHYST_SHARD));
+            }
+        }
         }
     }
 
