@@ -6,6 +6,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 
 public class GameManager {
@@ -31,6 +33,14 @@ public class GameManager {
         setPhase(0);
         setDelay(500); // Initial delay for phase 1: 500 seconds (8m20s)
         brBorderinit();
+
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (player.getGameMode() != GameMode.SPECTATOR) {
+                player.addPotionEffect(new PotionEffect(PotionEffectType.NIGHT_VISION, -1, 0)); // Infinite Night Vision
+                player.addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 6000, 4)); // Resistance 5 for 5 minutes (6000 ticks)
+            }
+        }
+
         if (mode.equalsIgnoreCase("default")) {
             teamManager.splitTeam(teamSize);
         } else if (mode.equalsIgnoreCase("im")) {

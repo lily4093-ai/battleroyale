@@ -133,7 +133,7 @@ public class BorderManager {
 
                 if (loopNumber % 10 == 0) {
                     String actionBar = String.format("§7자기장 크기: §c%.0f §7→ §c%.0f §f| §7축소 진행률: §c%.0f%% §f| §7자기장 중심: §c(%.0f, %.0f) §f| §7현재 크기: §e%.0f",
-                            prevSize, currentSize, progressPercent, xLoc2, zLoc2, currentBorderSize);
+                            prevSize, currentSize, progressPercent, currentX, currentZ, currentBorderSize);
 
                     for (Player player : Bukkit.getOnlinePlayers()) {
                         if (player.isOnline()) {
@@ -175,11 +175,11 @@ public class BorderManager {
     }
 
     public void brShrinkborder() {
-        if (currentPhase == 1) borderSpeed = 0.5;
-        else if (currentPhase == 2) borderSpeed = 0.7;
-        else if (currentPhase == 3) borderSpeed = 1.0;
-        else if (currentPhase == 4) borderSpeed = 1.5;
-        else if (currentPhase >= 5) borderSpeed = 2.0;
+        if (currentPhase == 1) borderSpeed = 2.5;      // 0.5 * 5
+        else if (currentPhase == 2) borderSpeed = 3.5;  // 0.7 * 5
+        else if (currentPhase == 3) borderSpeed = 5.0;  // 1.0 * 5
+        else if (currentPhase == 4) borderSpeed = 7.5;  // 1.5 * 5
+        else if (currentPhase >= 5) borderSpeed = 10.0; // 2.0 * 5
 
         double prevSize = currentSize;
         currentPhase++;
@@ -264,9 +264,14 @@ public class BorderManager {
 
         double playerX = player.getLocation().getX();
         double playerZ = player.getLocation().getZ();
-        double distance = Math.sqrt(Math.pow(playerX - borderCenterX, 2) + Math.pow(playerZ - borderCenterZ, 2));
-        double radius = borderSize / 2;
-        double progress = (distance <= radius) ? 1.0 - (distance / radius) : 0.0;
+
+        // Chebyshev distance for square border
+        double dx = Math.abs(playerX - borderCenterX);
+        double dz = Math.abs(playerZ - borderCenterZ);
+        double distance = Math.max(dx, dz);
+
+        double halfSize = borderSize / 2;
+        double progress = (distance <= halfSize) ? 1.0 - (distance / halfSize) : 0.0;
 
         BarColor color;
         if (progress > 0.7) color = BarColor.GREEN;
@@ -274,9 +279,9 @@ public class BorderManager {
         else if (progress > 0.1) color = BarColor.RED;
         else color = BarColor.PURPLE;
 
-        String title = (distance <= radius)
-                ? String.format("자기장 중심까지: %.0fm (반지름: %.0fm)", distance, radius)
-                : String.format("§c자기장 밖! 중심까지: %.0fm (반지름: %.0fm)", distance, radius);
+        String title = (distance <= halfSize)
+                ? String.format("자기장 중심까지: %.0fm (크기: %.0fm)", distance, borderSize)
+                : String.format("§c자기장 밖! 중심까지: %.0fm (크기: %.0fm)", distance, borderSize);
 
         bar.setColor(color);
         bar.setTitle(title);
