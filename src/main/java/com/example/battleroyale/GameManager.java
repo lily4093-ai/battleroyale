@@ -31,7 +31,7 @@ public class GameManager {
         setIngame(true);
         setGametime(0);
         setPhase(0);
-        setDelay(500); // Initial delay for phase 1: 500 seconds (8m20s)
+        setDelay(400); // Initial delay for phase 1: 400 seconds
         brBorderinit();
 
         for (Player player : Bukkit.getOnlinePlayers()) {
@@ -106,19 +106,17 @@ public class GameManager {
                         // Set delay for the new, current phase
                         switch (phase) {
                             case 2:
-                                setDelay(420); // 7 minutes
+                                setDelay(200);
                                 break;
                             case 3:
-                                setDelay(180); // 3 minutes
+                                setDelay(100);
                                 break;
                             case 4:
-                                setDelay(100); // 1 minute 40 seconds
+                                setDelay(50);
                                 break;
                             case 5:
-                                setDelay(50);  // 50 seconds
-                                break;
                             case 6:
-                                setDelay(30);  // 30 seconds
+                                setDelay(10);
                                 break;
                         }
                     }
