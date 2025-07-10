@@ -115,7 +115,7 @@ public final class BattleRoyale extends JavaPlugin implements Listener {
             player.sendMessage("§6[배틀로얄] §f사용법: /br [startdefault|startim] [size]");
             return true;
         } else if (command.getName().equalsIgnoreCase("chd") || command.getName().equalsIgnoreCase("총")) {
-            player.sendMessage("§6[배틀로얄] §f총 상점을 엽니다.");
+            player.sendMessage("§6[배틀로얄] §f총기 작업대를 지급합니다.");
             player.performCommand("give @s tacz:gun_smith_table");
             return true;
         } else if (command.getName().equalsIgnoreCase("기본템설정")) {
