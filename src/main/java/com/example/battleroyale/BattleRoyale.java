@@ -239,10 +239,6 @@ public final class BattleRoyale extends JavaPlugin implements Listener {
         if (droppedItem != null) {
             event.setDropItems(false);
             event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), droppedItem);
-        } else if (brokenBlock == Material.GLASS || brokenBlock == Material.GLASS_PANE) {
-            if (random.nextInt(100) < 20) {
-                event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.AMETHYST_SHARD, 1));
-            }
         }
     }
 
