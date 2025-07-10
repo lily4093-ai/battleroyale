@@ -5,8 +5,6 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
-import net.md_5.bungee.api.ChatMessageType;
-import net.md_5.bungee.api.chat.TextComponent;
 
 public class GameManager {
 
@@ -56,7 +54,6 @@ public class GameManager {
             @Override
             public void run() {
                 if (!isIngame || phase >= 7) {
-                    cancel();
                     return;
                 }
                 
@@ -75,18 +72,28 @@ public class GameManager {
                             String message = String.format("§7자기장 크기: §c%.0f §f| §7자기장 축소까지: §c%d초 남음 §f| §7다음 자기장 중앙: §c(%.0f,%.0f)",
                                     borderManager.getCurrentSize(), timeLeft, centerX, centerZ);
                             
+                            // 액션바 전송 방식 수정
                             try {
                                 if (borderManager.brIsinnextborder(x, z, phase)) {
-                                    player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
+                                    player.sendActionBar(message);
                                 } else {
-                                    player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message + " §f| §4§l현재 다음 자기장 바깥에 있습니다!"));
+                                    player.sendActionBar(message + " §f| §4§l현재 다음 자기장 바깥에 있습니다!");
                                 }
                             } catch (Exception e) {
-                                // 액션바 전송 실패 시 채팅으로 대체
-                                if (borderManager.brIsinnextborder(x, z, phase)) {
-                                    player.sendMessage(message);
-                                } else {
-                                    player.sendMessage(message + " §f| §4§l현재 다음 자기장 바깥에 있습니다!");
+                                // 액션바 전송 실패 시 타이틀로 대체
+                                try {
+                                    if (borderManager.brIsinnextborder(x, z, phase)) {
+                                        player.sendTitle("", message, 0, 20, 0);
+                                    } else {
+                                        player.sendTitle("", message + " §f| §4§l현재 다음 자기장 바깥에 있습니다!", 0, 20, 0);
+                                    }
+                                } catch (Exception ex) {
+                                    // 타이틀도 실패하면 채팅으로 대체
+                                    if (borderManager.brIsinnextborder(x, z, phase)) {
+                                        player.sendMessage(message);
+                                    } else {
+                                        player.sendMessage(message + " §f| §4§l현재 다음 자기장 바깥에 있습니다!");
+                                    }
                                 }
                             }
                         }
