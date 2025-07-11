@@ -5,6 +5,9 @@
 ## 필수 모드
 *   **[TaCZ](https://modrinth.com/mod/timeless-and-classics-zero)**
 
+## Minecraft 버전
+*   1.20.1 Forge
+
 ## 주요 기능
 
 *   **게임 시작 및 초기 설정:**
