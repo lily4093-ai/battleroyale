@@ -24,7 +24,7 @@ public class UtilManager implements Listener {
 
     private BattleRoyale plugin;
     private BorderManager borderManager;
-    private List<Material> disabledCrafting;
+    private final List<Material> disabledCrafting;
 
     public UtilManager(BattleRoyale plugin) {
         this.plugin = plugin;
@@ -34,6 +34,9 @@ public class UtilManager implements Listener {
                 Material.RESPAWN_ANCHOR,
                 Material.TOTEM_OF_UNDYING
         );
+
+        // 이벤트 리스너 등록
+        plugin.getServer().getPluginManager().registerEvents(this, plugin);
 
         new BukkitRunnable() {
             @Override
@@ -56,14 +59,16 @@ public class UtilManager implements Listener {
     }
 
     public void spawnSupplyDrop() {
+        if (borderManager == null || borderManager.getBorder() == null) return;
+
         Random random = new Random();
         double currentBorderRadius = borderManager.getCurrentSize() / 2;
         double centerX = borderManager.getBorderCenterX();
         double centerZ = borderManager.getBorderCenterZ();
 
         // Calculate random spawn location within the current border
-        double spawnX = centerX + (random.nextDouble() * 2 - 1) * currentBorderRadius;
-        double spawnZ = centerZ + (random.nextDouble() * 2 - 1) * currentBorderRadius;
+        double spawnX = centerX + (random.nextDouble() * 2 - 1) * (currentBorderRadius * 0.8); // 80% of border to prevent edge spawns
+        double spawnZ = centerZ + (random.nextDouble() * 2 - 1) * (currentBorderRadius * 0.8);
 
         Location spawnLoc = new Location(borderManager.getBorder().getWorld(), spawnX, 256, spawnZ);
         // Find the highest non-air block
@@ -72,22 +77,35 @@ public class UtilManager implements Listener {
         }
         spawnLoc.add(0, 1, 0); // Move up one block to be on top of the ground
 
+        // 기존 체스트 제거 (같은 위치에 있을 경우)
+        if (spawnLoc.getBlock().getType() == Material.CHEST) {
+            spawnLoc.getBlock().setType(Material.AIR);
+        }
+
         spawnLoc.getBlock().setType(Material.CHEST);
         Chest chest = (Chest) spawnLoc.getBlock().getState();
-        chest.getInventory().setItem(0, new ItemStack(Material.BLAZE_ROD, random.nextInt(5) + 1));
-        chest.getInventory().setItem(1, new ItemStack(Material.NETHERITE_INGOT, random.nextInt(2) + 1));
-        chest.getInventory().setItem(2, new ItemStack(Material.QUARTZ, random.nextInt(6) + 5));
-        chest.getInventory().setItem(3, new ItemStack(Material.GLOWSTONE_DUST, random.nextInt(4) + 5));
-        chest.getInventory().setItem(4, new ItemStack(Material.IRON_INGOT, 64));
-        chest.getInventory().setItem(5, new ItemStack(Material.IRON_INGOT, random.nextInt(33) + 32));
-        chest.getInventory().setItem(6, new ItemStack(Material.GOLD_INGOT, random.nextInt(21) + 10));
+        
+        // 보급품 아이템 설정
+        ItemStack[] items = {
+            new ItemStack(Material.BLAZE_ROD, random.nextInt(5) + 1),
+            new ItemStack(Material.NETHERITE_INGOT, random.nextInt(2) + 1),
+            new ItemStack(Material.QUARTZ, random.nextInt(6) + 5),
+            new ItemStack(Material.GLOWSTONE_DUST, random.nextInt(4) + 5),
+            new ItemStack(Material.IRON_INGOT, 64),
+            new ItemStack(Material.IRON_INGOT, random.nextInt(33) + 32),
+            new ItemStack(Material.GOLD_INGOT, random.nextInt(21) + 10)
+        };
+        
+        for (int i = 0; i < items.length; i++) {
+            chest.getInventory().setItem(i, items[i]);
+        }
+
         Bukkit.broadcastMessage("§6[배틀로얄] §f(" + (int) spawnLoc.getX() + ", " + (int) spawnLoc.getZ() + ") 에 보급이 소환되었습니다!");
     }
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
-        event.getPlayer().getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).setBaseValue(20.0);
-        event.getPlayer().setHealth(event.getPlayer().getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).getBaseValue());
+        resetPlayerHealth(event.getPlayer());
     }
 
     @EventHandler
@@ -95,16 +113,21 @@ public class UtilManager implements Listener {
         new BukkitRunnable() {
             @Override
             public void run() {
-                event.getPlayer().getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).setBaseValue(20.0);
-                event.getPlayer().setHealth(event.getPlayer().getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).getBaseValue());
+                resetPlayerHealth(event.getPlayer());
             }
         }.runTaskLater(plugin, 1L);
+    }
+
+    private void resetPlayerHealth(Player player) {
+        player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).setBaseValue(20.0);
+        player.setHealth(20.0);
     }
 
     @EventHandler
     public void onEntityDamage(EntityDamageEvent event) {
         if (event.getEntity() instanceof Player) {
-            if (event.getCause() != EntityDamageEvent.DamageCause.ENTITY_ATTACK && event.getCause() != EntityDamageEvent.DamageCause.PROJECTILE) {
+            if (event.getCause() != EntityDamageEvent.DamageCause.ENTITY_ATTACK && 
+                event.getCause() != EntityDamageEvent.DamageCause.PROJECTILE) {
                 event.setDamage(event.getDamage() / 2.0);
             }
         }
@@ -126,46 +149,88 @@ public class UtilManager implements Listener {
 
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {
-        Material brokenBlock = event.getBlock().getType();
+        Material blockType = event.getBlock().getType();
         Random random = new Random();
-        ItemStack droppedItem = null;
+        Location loc = event.getBlock().getLocation();
 
-        if (brokenBlock == Material.IRON_ORE || brokenBlock == Material.DEEPSLATE_IRON_ORE) {
-            droppedItem = new ItemStack(Material.IRON_INGOT, random.nextInt(5) + 1); // 1-5 Iron Ingots
-        } else if (brokenBlock == Material.GOLD_ORE || brokenBlock == Material.DEEPSLATE_GOLD_ORE) {
-            droppedItem = new ItemStack(Material.GOLD_INGOT, 1); // 1 Gold Ingot
-        } else if (brokenBlock == Material.COPPER_ORE || brokenBlock == Material.DEEPSLATE_COPPER_ORE) {
-            droppedItem = new ItemStack(Material.COPPER_INGOT, random.nextInt(5) + 1); // 1-5 Copper Ingots
-        } else if (brokenBlock == Material.LAPIS_ORE || brokenBlock == Material.DEEPSLATE_LAPIS_ORE) {
-            droppedItem = new ItemStack(Material.LAPIS_LAZULI, 4 + random.nextInt(5)); // 4-8 Lapis Lazuli
-        } else if (brokenBlock == Material.REDSTONE_ORE || brokenBlock == Material.DEEPSLATE_REDSTONE_ORE) {
-            droppedItem = new ItemStack(Material.REDSTONE, 4 + random.nextInt(2)); // 4-5 Redstone
-        } else if (brokenBlock == Material.DIAMOND_ORE || brokenBlock == Material.DEEPSLATE_DIAMOND_ORE) {
-            droppedItem = new ItemStack(Material.DIAMOND, 1); // 1 Diamond
-        } else if (brokenBlock == Material.EMERALD_ORE || brokenBlock == Material.DEEPSLATE_EMERALD_ORE) {
-            droppedItem = new ItemStack(Material.EMERALD, 1); // 1 Emerald
-        } else if (brokenBlock == Material.COAL_ORE || brokenBlock == Material.DEEPSLATE_COAL_ORE) {
-            droppedItem = new ItemStack(Material.COAL, 1); // 1 Coal
-        } else if (brokenBlock == Material.SAND) {
-            event.setDropItems(false);
-            event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.GLASS, 1));
-            if (random.nextDouble() < 0.20) { // 20% chance for Amethyst Shard
-                event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.AMETHYST_SHARD, 1));
-            }
-            return;
-        }
+        // 커스텀 드롭이 필요한 블록들만 처리
+        switch (blockType) {
+            // Iron Ore
+            case IRON_ORE:
+            case DEEPSLATE_IRON_ORE:
+                event.setDropItems(false); // 기존 드롭 비활성화
+                loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.IRON_INGOT, random.nextInt(5) + 1));
+                break;
 
-        if (droppedItem != null) {
-            event.setDropItems(false);
-            event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), droppedItem);
+            // Gold Ore
+            case GOLD_ORE:
+            case DEEPSLATE_GOLD_ORE:
+                event.setDropItems(false);
+                loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.GOLD_INGOT, 1));
+                break;
+
+            // Copper Ore
+            case COPPER_ORE:
+            case DEEPSLATE_COPPER_ORE:
+                event.setDropItems(false);
+                loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.COPPER_INGOT, random.nextInt(5) + 1));
+                break;
+
+            // Lapis Ore
+            case LAPIS_ORE:
+            case DEEPSLATE_LAPIS_ORE:
+                event.setDropItems(false);
+                loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.LAPIS_LAZULI, random.nextInt(5) + 4));
+                break;
+
+            // Redstone Ore
+            case REDSTONE_ORE:
+            case DEEPSLATE_REDSTONE_ORE:
+                event.setDropItems(false);
+                loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.REDSTONE, random.nextInt(2) + 4));
+                break;
+
+            // Diamond Ore
+            case DIAMOND_ORE:
+            case DEEPSLATE_DIAMOND_ORE:
+                event.setDropItems(false);
+                loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.DIAMOND, 1));
+                break;
+
+            // Emerald Ore
+            case EMERALD_ORE:
+            case DEEPSLATE_EMERALD_ORE:
+                event.setDropItems(false);
+                loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.EMERALD, 1));
+                break;
+
+            // Coal Ore
+            case COAL_ORE:
+            case DEEPSLATE_COAL_ORE:
+                event.setDropItems(false);
+                loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.COAL, 1));
+                break;
+
+            // Sand
+            case SAND:
+                event.setDropItems(false);
+                loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.GLASS, 1));
+                if (random.nextDouble() < 0.20) {
+                    loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.AMETHYST_SHARD, 1));
+                }
+                break;
         }
     }
 
     @EventHandler
     public void onCraftItem(CraftItemEvent event) {
         Material itemType = event.getRecipe().getResult().getType();
-        if (disabledCrafting.contains(itemType) || itemType.toString().contains("POTION") || itemType.toString().contains("ARROW") || itemType.toString().contains("BED")) {
+        if (disabledCrafting.contains(itemType) || 
+            itemType.toString().contains("POTION") || 
+            itemType.toString().contains("ARROW") || 
+            itemType.toString().contains("BED")) {
             event.setCancelled(true);
+            event.getWhoClicked().sendMessage("§c이 아이템은 제작할 수 없습니다!");
         }
     }
 }
