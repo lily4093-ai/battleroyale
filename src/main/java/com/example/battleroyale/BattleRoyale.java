@@ -301,4 +301,16 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabCompl
     public List<ItemStack> getDefaultItems() {
         return defaultItems;
     }
+
+    @EventHandler
+    public void onBlockBreak(BlockBreakEvent event) {
+        Material type = event.getBlock().getType();
+        if (type == Material.IRON_ORE) {
+            event.setDropItems(false); // 기본 드롭 취소
+            event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.IRON_INGOT, 1));
+        } else if (type == Material.GOLD_ORE) {
+            event.setDropItems(false); // 기본 드롭 취소
+            event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.GOLD_INGOT, 1));
+        }
+    }
 }
