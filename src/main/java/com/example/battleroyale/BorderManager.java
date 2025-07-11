@@ -76,7 +76,7 @@ public class BorderManager {
         // Stop the waiting boss bar updater and start the first countdown
         stopCountdown(); // Ensure no other countdown is running
         updateBossBarWhileWaiting(); // Start the proper updater
-        startCountdown(60); // Start countdown to the first shrink
+        startCountdown(countdownTimes[currentPhase]); // Start countdown to the first shrink
     }
 
     public void makeIngameborder(int phase, double newSize, double prevSize, double centerX, double centerZ) {
@@ -120,8 +120,12 @@ public class BorderManager {
                         nextBorderCenterZ = randomCenter.getZ();
                     }
                     
-                    // 자기장 축소 완료 후 다음 축소까지 대기 시간 설정 (예: 60초)
-                    startCountdown(60);
+                    // 자기장 축소 완료 후 다음 축소까지 대기 시간 설정
+                    if (currentPhase < countdownTimes.length) {
+                        startCountdown(countdownTimes[currentPhase]);
+                    } else {
+                        // Handle case where there are no more countdowns defined (e.g., game end)
+                    }
                     updateBossBarWhileWaiting();
                     cancel();
                     return;
