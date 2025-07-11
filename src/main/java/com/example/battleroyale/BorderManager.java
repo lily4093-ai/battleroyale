@@ -59,17 +59,23 @@ public class BorderManager {
     }
 
     public void brBorderinit() {
-        currentPhase = 1;
-        currentSize = borderSizes[currentPhase];
-        borderCenterX = new Random().nextInt(2001) - 1000;
-        borderCenterZ = new Random().nextInt(2001) - 1000;
+        currentPhase = 0; // Start from phase 0
+        currentSize = borderSizes[currentPhase]; // Initial size 2500
+        borderCenterX = 0; // Start at center 0,0
+        borderCenterZ = 0;
+        border.setCenter(borderCenterX, borderCenterZ);
+        border.setSize(currentSize);
 
-        Location nextCenter = makeRandomcenter(currentSize, getBorderSize(currentPhase + 1), borderCenterX, borderCenterZ);
+        // Calculate the center for the *first* shrink (from 2500 to 2000)
+        double nextSize = getBorderSize(currentPhase + 1);
+        Location nextCenter = makeRandomcenter(currentSize, nextSize, borderCenterX, borderCenterZ);
         nextBorderCenterX = nextCenter.getX();
         nextBorderCenterZ = nextCenter.getZ();
 
-        borderSpeed = 1000.0; // Fast for initial setup
-        makeIngameborder(1, currentSize, currentSize, borderCenterX, borderCenterZ);
+        // Stop the waiting boss bar updater and start the first countdown
+        stopCountdown(); // Ensure no other countdown is running
+        updateBossBarWhileWaiting(); // Start the proper updater
+        startCountdown(60); // Start countdown to the first shrink
     }
 
     public void makeIngameborder(int phase, double newSize, double prevSize, double centerX, double centerZ) {
@@ -309,15 +315,15 @@ public class BorderManager {
         double relativeAngle = ((targetAngle - normalizedYaw) % 360 + 360) % 360;
         
         // 8방향 화살표 결정
-        if (relativeAngle >= 337.5 || relativeAngle < 22.5) return "↑";      // 앞
-        else if (relativeAngle >= 22.5 && relativeAngle < 67.5) return "↗";  // 앞-오른쪽
-        else if (relativeAngle >= 67.5 && relativeAngle < 112.5) return "→"; // 오른쪽
-        else if (relativeAngle >= 112.5 && relativeAngle < 157.5) return "↘"; // 뒤-오른쪽
-        else if (relativeAngle >= 157.5 && relativeAngle < 202.5) return "↓"; // 뒤
-        else if (relativeAngle >= 202.5 && relativeAngle < 247.5) return "↙"; // 뒤-왼쪽
-        else if (relativeAngle >= 247.5 && relativeAngle < 292.5) return "←"; // 왼쪽
-        else if (relativeAngle >= 292.5 && relativeAngle < 337.5) return "↖"; // 앞-왼쪽
-        return "↑";
+        if (relativeAngle >= 337.5 || relativeAngle < 22.5) return "↓";      // 뒤
+        else if (relativeAngle >= 22.5 && relativeAngle < 67.5) return "↙";  // 뒤-왼쪽
+        else if (relativeAngle >= 67.5 && relativeAngle < 112.5) return "←"; // 왼쪽
+        else if (relativeAngle >= 112.5 && relativeAngle < 157.5) return "↖"; // 앞-왼쪽
+        else if (relativeAngle >= 157.5 && relativeAngle < 202.5) return "↑"; // 앞
+        else if (relativeAngle >= 202.5 && relativeAngle < 247.5) return "↗"; // 앞-오른쪽
+        else if (relativeAngle >= 247.5 && relativeAngle < 292.5) return "→"; // 오른쪽
+        else if (relativeAngle >= 292.5 && relativeAngle < 337.5) return "↘"; // 뒤-오른쪽
+        return "↓";
     }
 
     public void updateBossBarWhileWaiting() {
