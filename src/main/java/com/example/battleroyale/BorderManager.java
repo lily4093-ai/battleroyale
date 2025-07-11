@@ -234,6 +234,9 @@ public class BorderManager {
                     // 자동으로 다음 자기장 축소 시작
                     if (currentPhase + 1 < borderSizes.length) {
                         brShrinkborder();
+                    } else {
+                        // All phases completed, end the game
+                        endGame();
                     }
                     cancel();
                     return;
@@ -396,5 +399,22 @@ public class BorderManager {
     public int getCountdownSeconds() { return countdownSeconds; }
     public boolean isCountdownActive() { return isCountdownActive; }
     public int getCurrentPhase() { return currentPhase; }
+
+    private void endGame() {
+        Bukkit.broadcastMessage("§6[배틀로얄] §a게임이 종료되었습니다! 모든 플레이어를 자기장 중심으로 이동시킵니다.");
+        Location centerLoc = new Location(world, borderCenterX, world.getHighestBlockYAt((int)borderCenterX, (int)borderCenterZ) + 1, borderCenterZ);
+
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            player.teleport(centerLoc);
+            player.setGameMode(org.bukkit.GameMode.SURVIVAL);
+            player.setHealth(player.getMaxHealth()); // Full health
+            player.setFoodLevel(20); // Full food
+            player.setSaturation(20); // Full saturation
+            player.getInventory().clear(); // Clear inventory
+            player.getActivePotionEffects().forEach(effect -> player.removePotionEffect(effect.getType())); // Clear potion effects
+        }
+        // Optionally, reset game state in GameManager or other managers
+        GameManager.setIngame(false);
+    }
     
 }
