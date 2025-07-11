@@ -26,9 +26,8 @@ public class UtilManager implements Listener {
     private BorderManager borderManager;
     private List<Material> disabledCrafting;
 
-    public UtilManager(BattleRoyale plugin, BorderManager borderManager) {
+    public UtilManager(BattleRoyale plugin) {
         this.plugin = plugin;
-        this.borderManager = borderManager;
         this.disabledCrafting = Arrays.asList(
                 Material.ENCHANTED_GOLDEN_APPLE,
                 Material.END_CRYSTAL,
@@ -39,11 +38,15 @@ public class UtilManager implements Listener {
         new BukkitRunnable() {
             @Override
             public void run() {
-                if (GameManager.isIngame() && borderManager.getCurrentPhase() >= 1) {
+                if (GameManager.isIngame() && borderManager != null && borderManager.getCurrentPhase() >= 1) {
                     spawnSupplyDrop();
                 }
             }
         }.runTaskTimer(plugin, 20L * 60 * 4, 20L * 60 * 4); // Every 4 minutes
+    }
+
+    public void setBorderManager(BorderManager borderManager) {
+        this.borderManager = borderManager;
     }
 
     public void updateCompass(Location target) {
