@@ -24,15 +24,18 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.boss.BossBar;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
+import org.bukkit.command.TabCompleter; // Import TabCompleter
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 
-public final class BattleRoyale extends JavaPlugin implements Listener {
+public final class BattleRoyale extends JavaPlugin implements Listener, TabCompleter {
 
     private GameManager gameManager;
     private BorderManager borderManager;
@@ -50,6 +53,7 @@ public final class BattleRoyale extends JavaPlugin implements Listener {
         utilManager = new UtilManager(this, borderManager);
         gameManager = new GameManager(this, borderManager, teamManager);
         Bukkit.getPluginManager().registerEvents(this, this);
+        getCommand("br").setTabCompleter(this); // Register TabCompleter
 
         // Initialize default items
         ItemStack pickaxe = new ItemStack(Material.DIAMOND_PICKAXE);
@@ -85,7 +89,7 @@ public final class BattleRoyale extends JavaPlugin implements Listener {
         Player player = (Player) sender;
 
         // Commands that are allowed for non-OPs
-        List<String> allowedCommands = List.of("총", "chd", "빵", "기본템", "rlqhsxpa", "밥");
+        List<String> allowedCommands = List.of("총", "chd", "빵", "기본템", "rlqhsxpa", "밥", "top", "탑");
 
         if (!allowedCommands.contains(command.getName().toLowerCase()) && !player.isOp()) {
             player.sendMessage("§c이 명령어는 OP만 사용할 수 있습니다.");
@@ -188,6 +192,22 @@ public final class BattleRoyale extends JavaPlugin implements Listener {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        if (command.getName().equalsIgnoreCase("br")) {
+            if (args.length == 1) {
+                return Arrays.asList("startdefault", "startim");
+            }
+            if (args.length == 2) {
+                if (args[0].equalsIgnoreCase("startdefault") || args[0].equalsIgnoreCase("startim")) {
+                    // Suggest common sizes or a placeholder
+                    return Arrays.asList("2500", "1000", "500");
+                }
+            }
+        }
+        return Collections.emptyList();
     }
 
     @EventHandler
