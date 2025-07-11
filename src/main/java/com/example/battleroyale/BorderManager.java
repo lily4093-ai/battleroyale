@@ -37,6 +37,9 @@ public class BorderManager {
     private int countdownSeconds = 0;
     private BukkitRunnable countdownTask;
     private boolean isCountdownActive = false;
+    
+    // 보스바 업데이트 태스크
+    private BukkitRunnable bossBarUpdateTask;
 
     public BorderManager() {
         this.world = Bukkit.getWorlds().get(0);
@@ -49,7 +52,7 @@ public class BorderManager {
         for (Player player : Bukkit.getOnlinePlayers()) {
             addPlayerToBossBar(player);
         }
-        updateBossBarWhileWaiting(); // Start the waiting updater
+        startBossBarUpdater(); // 보스바 업데이트 시작
     }
 
     public double getBorderSize(int phase) {
@@ -75,8 +78,10 @@ public class BorderManager {
 
         // Stop the waiting boss bar updater and start the first countdown
         stopCountdown(); // Ensure no other countdown is running
-        updateBossBarWhileWaiting(); // Start the proper updater
         startCountdown(countdownTimes[currentPhase]); // Start countdown to the first shrink
+        
+        // 즉시 보스바 업데이트 (게임 시작 직후)
+        updateBossBarForAllPlayers(currentSize);
     }
 
     public void makeIngameborder(int phase, double newSize, double prevSize, double centerX, double centerZ) {
@@ -126,7 +131,6 @@ public class BorderManager {
                     } else {
                         // Handle case where there are no more countdowns defined (e.g., game end)
                     }
-                    updateBossBarWhileWaiting();
                     cancel();
                     return;
                 }
@@ -331,23 +335,33 @@ public class BorderManager {
         return "↓";
     }
 
-    public void updateBossBarWhileWaiting() {
-        new BukkitRunnable() {
+    // 보스바 업데이트 태스크 시작 (게임 중 항상 실행)
+    public void startBossBarUpdater() {
+        stopBossBarUpdater(); // 기존 태스크 중지
+        
+        bossBarUpdateTask = new BukkitRunnable() {
             @Override
             public void run() {
-                if (isShrinking) {
-                    cancel();
-                    return;
-                }
-                
-                // 카운트다운 중이면 액션바만 업데이트하고 보스바는 그대로 유지
+                // 카운트다운 중이면 액션바 업데이트
                 if (isCountdownActive) {
                     updateCountdownActionBar();
-                } else {
+                }
+                
+                // 보스바는 항상 업데이트 (자기장 축소 중이 아닐 때만 현재 크기로)
+                if (!isShrinking) {
                     updateBossBarForAllPlayers(currentSize);
                 }
             }
-        }.runTaskTimer(BattleRoyale.getPlugin(BattleRoyale.class), 0L, 20L);
+        };
+        bossBarUpdateTask.runTaskTimer(BattleRoyale.getPlugin(BattleRoyale.class), 0L, 20L);
+    }
+
+    // 보스바 업데이트 태스크 중지
+    public void stopBossBarUpdater() {
+        if (bossBarUpdateTask != null) {
+            bossBarUpdateTask.cancel();
+            bossBarUpdateTask = null;
+        }
     }
 
     public void addPlayerToBossBar(Player player) {
@@ -381,5 +395,6 @@ public class BorderManager {
     public double getNextBorderCenterZ() { return nextBorderCenterZ; }
     public int getCountdownSeconds() { return countdownSeconds; }
     public boolean isCountdownActive() { return isCountdownActive; }
+    public int getCurrentPhase() { return currentPhase; }
     
 }
