@@ -203,7 +203,7 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabCompl
             if (args.length == 2) {
                 if (args[0].equalsIgnoreCase("startdefault") || args[0].equalsIgnoreCase("startim")) {
                     // Suggest common sizes or a placeholder
-                    return Arrays.asList("2500", "1000", "500");
+                    return Arrays.asList("2", "3", "4");
                 }
             }
         }
