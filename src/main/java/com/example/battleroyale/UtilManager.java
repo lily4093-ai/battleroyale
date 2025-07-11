@@ -41,7 +41,7 @@ public class UtilManager implements Listener {
         new BukkitRunnable() {
             @Override
             public void run() {
-                if (GameManager.isIngame() && GameManager.getPhase() >= 1) {
+                if (GameManager.isIngame() && borderManager.getCurrentPhase() >= 1) {
                     spawnSupplyDrop();
                 }
             }
