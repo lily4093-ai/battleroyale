@@ -42,14 +42,6 @@ public class GameManager {
         }
     }
 
-    
-
-    
-
-    
-
-    
-
     public static void setIngame(boolean ingame) {
         isIngame = ingame;
     }
