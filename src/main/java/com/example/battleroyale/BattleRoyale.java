@@ -234,34 +234,7 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabCompl
         }
     }
 
-    @EventHandler
-    public void onBlockBreak(BlockBreakEvent event) {
-        Material brokenBlock = event.getBlock().getType();
-        ItemStack droppedItem = null;
-
-        if (brokenBlock == Material.DEEPSLATE_IRON_ORE) {
-            droppedItem = new ItemStack(Material.IRON_INGOT);
-        } else if (brokenBlock == Material.GOLD_ORE || brokenBlock == Material.DEEPSLATE_GOLD_ORE) {
-            droppedItem = new ItemStack(Material.GOLD_INGOT);
-        } else if (brokenBlock == Material.DEEPSLATE_COPPER_ORE) {
-            droppedItem = new ItemStack(Material.COPPER_INGOT);
-        } else if (brokenBlock == Material.DEEPSLATE_LAPIS_ORE) {
-            droppedItem = new ItemStack(Material.LAPIS_LAZULI, 4 + random.nextInt(5));
-        } else if (brokenBlock == Material.DEEPSLATE_REDSTONE_ORE) {
-            droppedItem = new ItemStack(Material.REDSTONE, 4 + random.nextInt(2));
-        } else if (brokenBlock == Material.DEEPSLATE_DIAMOND_ORE) {
-            droppedItem = new ItemStack(Material.DIAMOND);
-        } else if (brokenBlock == Material.DEEPSLATE_EMERALD_ORE) {
-            droppedItem = new ItemStack(Material.EMERALD);
-        } else if (brokenBlock == Material.DEEPSLATE_COAL_ORE) {
-            droppedItem = new ItemStack(Material.COAL);
-        }
-
-        if (droppedItem != null) {
-            event.setDropItems(false);
-            event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), droppedItem);
-        }
-    }
+    
 
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
