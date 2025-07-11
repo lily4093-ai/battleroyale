@@ -1,5 +1,3 @@
-
-
 package com.example.battleroyale;
 
 import org.bukkit.Bukkit;
@@ -153,26 +151,31 @@ public class UtilManager implements Listener {
                 break;
 
             // Lapis Ore
+            case LAPIS_ORE:
             case DEEPSLATE_LAPIS_ORE:
                 loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.LAPIS_LAZULI, random.nextInt(5) + 4)); // 4-8 Lapis Lazuli
                 break;
 
             // Redstone Ore
+            case REDSTONE_ORE:
             case DEEPSLATE_REDSTONE_ORE:
                 loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.REDSTONE, random.nextInt(2) + 4)); // 4-5 Redstone
                 break;
 
             // Diamond Ore
+            case DIAMOND_ORE:
             case DEEPSLATE_DIAMOND_ORE:
                 loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.DIAMOND, 1)); // 1 Diamond
                 break;
 
             // Emerald Ore
+            case EMERALD_ORE:
             case DEEPSLATE_EMERALD_ORE:
                 loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.EMERALD, 1)); // 1 Emerald
                 break;
 
             // Coal Ore
+            case COAL_ORE:
             case DEEPSLATE_COAL_ORE:
                 loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.COAL, 1)); // 1 Coal
                 break;
@@ -208,4 +211,3 @@ public class UtilManager implements Listener {
         }
     }
 }
-
