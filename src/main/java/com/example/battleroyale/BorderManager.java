@@ -22,6 +22,7 @@ public class BorderManager {
     private WorldBorder border;
     private World world;
     private double[] borderSizes = {2500, 2000, 1500, 1000, 500, 100, 10, 0};
+    private int[] countdownTimes = {400, 250, 150, 100, 60, 60, 60};
     private double currentSize;
     private double borderCenterX;
     private double borderCenterZ;
