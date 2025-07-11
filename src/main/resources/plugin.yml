@@ -29,3 +29,7 @@ commands:
     description: Get bread.
   강제종료:
     description: Force stop the server.
+  top:
+    description: Teleports the player to the highest block at their current X, Z coordinates.
+  탑:
+    description: Teleports the player to the highest block at their current X, Z coordinates.
