@@ -6,10 +6,10 @@
 *   **[TaCZ](https://modrinth.com/mod/timeless-and-classics-zero)**
 
 ## Minecraft 버전
-*   1.20.1 Forge
+*   [1.20.1 Forge](https://files.minecraftforge.net/net/minecraftforge/forge/index_1.20.1.html)
 
 ## 권장 서버 실행 환경
-*   MAGMA 1.20.1
+*   [MAGMA 1.20.1](https://startminecraft.com/software/magma)
 
 ## 주요 기능
 
