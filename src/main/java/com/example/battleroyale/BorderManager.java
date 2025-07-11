@@ -301,11 +301,9 @@ public class BorderManager {
         else if (progress > 0.1) color = BarColor.RED;
         else color = BarColor.PURPLE;
 
-        String directionArrow = getDirectionArrow(playerX, playerZ, playerYaw, borderCenterX, borderCenterZ);
-
         String title = (distance <= halfSize)
-                ? String.format("자기장 중심까지: %.0fm (크기: %.0fm) %s", distance, borderSize, directionArrow)
-                : String.format("§c자기장 밖! 중심까지: %.0fm (크기: %.0fm) %s", distance, borderSize, directionArrow);
+                ? String.format("자기장 중심까지: %.0fm (크기: %.0fm)", distance, borderSize)
+                : String.format("§c자기장 밖! 중심까지: %.0fm (크기: %.0fm)", distance, borderSize);
 
         bar.setColor(color);
         bar.setTitle(title);
