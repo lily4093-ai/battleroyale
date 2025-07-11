@@ -40,10 +40,12 @@ public class BorderManager {
     
     // 보스바 업데이트 태스크
     private BukkitRunnable bossBarUpdateTask;
-    private UtilManager utilManager; // Add UtilManager field
+    private UtilManager utilManager;
+    private BattleRoyale plugin; // Add plugin field
 
-    public BorderManager(UtilManager utilManager) {
-        this.utilManager = utilManager; // Initialize UtilManager
+    public BorderManager(BattleRoyale plugin, UtilManager utilManager) {
+        this.plugin = plugin;
+        this.utilManager = utilManager;
         this.world = Bukkit.getWorlds().get(0);
         this.border = world.getWorldBorder();
         this.currentSize = borderSizes[0]; // Set initial size to the first value in borderSizes array
@@ -251,7 +253,7 @@ public class BorderManager {
                 countdownSeconds--;
             }
         };
-        countdownTask.runTaskTimer(BattleRoyale.getPlugin(BattleRoyale.class), 0L, 20L);
+        countdownTask.runTaskTimer(plugin, 0L, 20L);
     }
 
     // 카운트다운 중지
@@ -358,7 +360,7 @@ public class BorderManager {
                 }
             }
         };
-        bossBarUpdateTask.runTaskTimer(BattleRoyale.getPlugin(BattleRoyale.class), 0L, 20L);
+        bossBarUpdateTask.runTaskTimer(plugin, 0L, 20L);
     }
 
     // 보스바 업데이트 태스크 중지
