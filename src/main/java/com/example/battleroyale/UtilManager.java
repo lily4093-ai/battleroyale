@@ -126,26 +126,77 @@ public class UtilManager implements Listener {
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {
         Material blockType = event.getBlock().getType();
-        if (blockType == Material.IRON_ORE || blockType == Material.DEEPSLATE_IRON_ORE) {
-            event.setCancelled(true);
-            event.getBlock().setType(Material.AIR);
-            event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.IRON_INGOT, new Random().nextInt(5) + 1));
-        } else if (blockType == Material.DEEPSLATE_IRON_ORE) {
-            event.setCancelled(true);
-            event.getBlock().setType(Material.AIR);
-            event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.IRON_INGOT, new Random().nextInt(5) + 1));
-        } else if (blockType == Material.COPPER_ORE || blockType == Material.DEEPSLATE_COPPER_ORE) {
-            event.setCancelled(true);
-            event.getBlock().setType(Material.AIR);
-            event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.COPPER_INGOT, new Random().nextInt(5) + 1));
-        } else if (blockType == Material.SAND) {
-            event.setCancelled(true);
-            event.getBlock().setType(Material.AIR);
-            event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.GLASS));
-            Random random = new Random();
-            if (random.nextDouble() < 0.20) { // 20% chance
-                event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.AMETHYST_SHARD));
-            }
+        Random random = new Random();
+
+        // Cancel the event and drop items manually
+        event.setCancelled(true);
+        event.getBlock().setType(Material.AIR);
+        Location loc = event.getBlock().getLocation();
+
+        switch (blockType) {
+            // Iron Ore
+            case IRON_ORE:
+            case DEEPSLATE_IRON_ORE:
+                loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.IRON_INGOT, random.nextInt(5) + 1)); // 1-5 Iron Ingots
+                break;
+
+            // Gold Ore
+            case GOLD_ORE:
+            case DEEPSLATE_GOLD_ORE:
+                loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.GOLD_INGOT, 1)); // 1 Gold Ingot
+                break;
+
+            // Copper Ore
+            case COPPER_ORE:
+            case DEEPSLATE_COPPER_ORE:
+                loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.COPPER_INGOT, random.nextInt(5) + 1)); // 1-5 Copper Ingots
+                break;
+
+            // Lapis Ore
+            case DEEPSLATE_LAPIS_ORE:
+                loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.LAPIS_LAZULI, random.nextInt(5) + 4)); // 4-8 Lapis Lazuli
+                break;
+
+            // Redstone Ore
+            case DEEPSLATE_REDSTONE_ORE:
+                loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.REDSTONE, random.nextInt(2) + 4)); // 4-5 Redstone
+                break;
+
+            // Diamond Ore
+            case DEEPSLATE_DIAMOND_ORE:
+                loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.DIAMOND, 1)); // 1 Diamond
+                break;
+
+            // Emerald Ore
+            case DEEPSLATE_EMERALD_ORE:
+                loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.EMERALD, 1)); // 1 Emerald
+                break;
+
+            // Coal Ore
+            case DEEPSLATE_COAL_ORE:
+                loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.COAL, 1)); // 1 Coal
+                break;
+
+            // Sand
+            case SAND:
+                loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.GLASS, 1));
+                if (random.nextDouble() < 0.20) { // 20% chance for Amethyst Shard
+                    loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.AMETHYST_SHARD, 1));
+                }
+                break;
+
+            // Clay
+            case CLAY:
+                loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.GLASS, 1));
+                if (random.nextDouble() < 0.20) { // 20% chance for Amethyst Shard
+                    loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.AMETHYST_SHARD, 1));
+                }
+                break;
+
+            default:
+                // If the block is not in the list, un-cancel the event to allow default behavior
+                event.setCancelled(false);
+                break;
         }
     }
 
