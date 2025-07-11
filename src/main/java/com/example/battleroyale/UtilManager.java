@@ -126,83 +126,38 @@ public class UtilManager implements Listener {
 
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {
-        Material blockType = event.getBlock().getType();
+        Material brokenBlock = event.getBlock().getType();
         Random random = new Random();
+        ItemStack droppedItem = null;
 
-        // Cancel the event and drop items manually
-        event.setCancelled(true);
-        event.getBlock().setType(Material.AIR);
-        Location loc = event.getBlock().getLocation();
+        if (brokenBlock == Material.IRON_ORE || brokenBlock == Material.DEEPSLATE_IRON_ORE) {
+            droppedItem = new ItemStack(Material.IRON_INGOT, random.nextInt(5) + 1); // 1-5 Iron Ingots
+        } else if (brokenBlock == Material.GOLD_ORE || brokenBlock == Material.DEEPSLATE_GOLD_ORE) {
+            droppedItem = new ItemStack(Material.GOLD_INGOT, 1); // 1 Gold Ingot
+        } else if (brokenBlock == Material.COPPER_ORE || brokenBlock == Material.DEEPSLATE_COPPER_ORE) {
+            droppedItem = new ItemStack(Material.COPPER_INGOT, random.nextInt(5) + 1); // 1-5 Copper Ingots
+        } else if (brokenBlock == Material.LAPIS_ORE || brokenBlock == Material.DEEPSLATE_LAPIS_ORE) {
+            droppedItem = new ItemStack(Material.LAPIS_LAZULI, 4 + random.nextInt(5)); // 4-8 Lapis Lazuli
+        } else if (brokenBlock == Material.REDSTONE_ORE || brokenBlock == Material.DEEPSLATE_REDSTONE_ORE) {
+            droppedItem = new ItemStack(Material.REDSTONE, 4 + random.nextInt(2)); // 4-5 Redstone
+        } else if (brokenBlock == Material.DIAMOND_ORE || brokenBlock == Material.DEEPSLATE_DIAMOND_ORE) {
+            droppedItem = new ItemStack(Material.DIAMOND, 1); // 1 Diamond
+        } else if (brokenBlock == Material.EMERALD_ORE || brokenBlock == Material.DEEPSLATE_EMERALD_ORE) {
+            droppedItem = new ItemStack(Material.EMERALD, 1); // 1 Emerald
+        } else if (brokenBlock == Material.COAL_ORE || brokenBlock == Material.DEEPSLATE_COAL_ORE) {
+            droppedItem = new ItemStack(Material.COAL, 1); // 1 Coal
+        } else if (brokenBlock == Material.SAND) {
+            event.setDropItems(false);
+            event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.GLASS, 1));
+            if (random.nextDouble() < 0.20) { // 20% chance for Amethyst Shard
+                event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.AMETHYST_SHARD, 1));
+            }
+            return;
+        }
 
-        switch (blockType) {
-            // Iron Ore
-            case IRON_ORE:
-            case DEEPSLATE_IRON_ORE:
-                loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.IRON_INGOT, random.nextInt(5) + 1)); // 1-5 Iron Ingots
-                break;
-
-            // Gold Ore
-            case GOLD_ORE:
-            case DEEPSLATE_GOLD_ORE:
-                loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.GOLD_INGOT, 1)); // 1 Gold Ingot
-                break;
-
-            // Copper Ore
-            case COPPER_ORE:
-            case DEEPSLATE_COPPER_ORE:
-                loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.COPPER_INGOT, random.nextInt(5) + 1)); // 1-5 Copper Ingots
-                break;
-
-            // Lapis Ore
-            case LAPIS_ORE:
-            case DEEPSLATE_LAPIS_ORE:
-                loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.LAPIS_LAZULI, random.nextInt(5) + 4)); // 4-8 Lapis Lazuli
-                break;
-
-            // Redstone Ore
-            case REDSTONE_ORE:
-            case DEEPSLATE_REDSTONE_ORE:
-                loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.REDSTONE, random.nextInt(2) + 4)); // 4-5 Redstone
-                break;
-
-            // Diamond Ore
-            case DIAMOND_ORE:
-            case DEEPSLATE_DIAMOND_ORE:
-                loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.DIAMOND, 1)); // 1 Diamond
-                break;
-
-            // Emerald Ore
-            case EMERALD_ORE:
-            case DEEPSLATE_EMERALD_ORE:
-                loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.EMERALD, 1)); // 1 Emerald
-                break;
-
-            // Coal Ore
-            case COAL_ORE:
-            case DEEPSLATE_COAL_ORE:
-                loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.COAL, 1)); // 1 Coal
-                break;
-
-            // Sand
-            case SAND:
-                loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.GLASS, 1));
-                if (random.nextDouble() < 0.20) { // 20% chance for Amethyst Shard
-                    loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.AMETHYST_SHARD, 1));
-                }
-                break;
-
-            // Clay
-            case CLAY:
-                loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.GLASS, 1));
-                if (random.nextDouble() < 0.20) { // 20% chance for Amethyst Shard
-                    loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.AMETHYST_SHARD, 1));
-                }
-                break;
-
-            default:
-                // If the block is not in the list, un-cancel the event to allow default behavior
-                event.setCancelled(false);
-                break;
+        if (droppedItem != null) {
+            event.setDropItems(false);
+            event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), droppedItem);
         }
     }
 
