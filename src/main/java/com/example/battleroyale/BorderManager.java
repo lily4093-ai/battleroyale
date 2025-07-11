@@ -40,8 +40,10 @@ public class BorderManager {
     
     // 보스바 업데이트 태스크
     private BukkitRunnable bossBarUpdateTask;
+    private UtilManager utilManager; // Add UtilManager field
 
-    public BorderManager() {
+    public BorderManager(UtilManager utilManager) {
+        this.utilManager = utilManager; // Initialize UtilManager
         this.world = Bukkit.getWorlds().get(0);
         this.border = world.getWorldBorder();
         this.currentSize = borderSizes[0]; // Set initial size to the first value in borderSizes array
@@ -82,6 +84,7 @@ public class BorderManager {
         
         // 즉시 보스바 업데이트 (게임 시작 직후)
         updateBossBarForAllPlayers(currentSize);
+        utilManager.updateCompass(new Location(world, borderCenterX, 0, borderCenterZ)); // Update compass to initial center
     }
 
     public void makeIngameborder(int phase, double newSize, double prevSize, double centerX, double centerZ) {
@@ -172,6 +175,7 @@ public class BorderManager {
                 border.setCenter(currentX, currentZ);
                 borderCenterX = currentX;
                 borderCenterZ = currentZ;
+                utilManager.updateCompass(new Location(world, borderCenterX, 0, borderCenterZ)); // Update compass during shrink
             }
         }.runTaskTimer(BattleRoyale.getPlugin(BattleRoyale.class), 1L, 1L);
     }
