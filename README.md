@@ -2,6 +2,9 @@
 
 이 플러그인은 마인크래프트 서버에서 배틀로얄 게임을 플레이할 수 있도록 다양한 기능을 제공합니다.
 
+## 필수 모드
+*   **[TaCZ](https://modrinth.com/mod/timeless-and-classics-zero)**
+
 ## 주요 기능
 
 *   **게임 시작 및 초기 설정:**
