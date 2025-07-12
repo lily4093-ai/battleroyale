@@ -4,6 +4,9 @@ version: '1.0'
 main: com.example.battleroyale.BattleRoyale
 api-version: '1.20'
 commands:
+  brteam:
+    description: Manages teams for Battle Royale.
+    usage: /brteam [create|add|remove|list]
   br:
     description: BattleRoyale command.
     usage: /br [startdefault|startim] [size]
