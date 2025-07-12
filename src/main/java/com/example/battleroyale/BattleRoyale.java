@@ -55,6 +55,7 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabCompl
         utilManager.setBorderManager(borderManager); // Set BorderManager in UtilManager
         Bukkit.getPluginManager().registerEvents(this, this);
         getCommand("br").setTabCompleter(this); // Register TabCompleter
+        getCommand("brteam").setTabCompleter(this); // Register TabCompleter for brteam
 
         // Initialize default items
         ItemStack pickaxe = new ItemStack(Material.DIAMOND_PICKAXE);
@@ -191,6 +192,48 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabCompl
             player.teleport(highestBlock.add(0, 1, 0));
             player.sendMessage("§6[배틀로얄] §f가장 높은 블록으로 이동했습니다.");
             return true;
+        } else if (command.getName().equalsIgnoreCase("brteam")) {
+            if (args.length > 0) {
+                if (args[0].equalsIgnoreCase("create")) {
+                    if (args.length > 1) {
+                        String teamName = args[1];
+                        teamManager.createTeam(teamName);
+                        player.sendMessage("§6[배틀로얄] §f" + teamName + " 팀을 생성했습니다.");
+                        return true;
+                    }
+                } else if (args[0].equalsIgnoreCase("add")) {
+                    if (args.length > 2) {
+                        String teamName = args[1];
+                        Player targetPlayer = Bukkit.getPlayer(args[2]);
+                        if (targetPlayer != null) {
+                            teamManager.addPlayerToTeam(teamName, targetPlayer);
+                            player.sendMessage("§6[배틀로얄] §f" + targetPlayer.getName() + "님을 " + teamName + " 팀에 추가했습니다.");
+                            return true;
+                        } else {
+                            player.sendMessage("§6[배틀로얄] §c플레이어를 찾을 수 없습니다.");
+                            return true;
+                        }
+                    }
+                } else if (args[0].equalsIgnoreCase("remove")) {
+                    if (args.length > 2) {
+                        String teamName = args[1];
+                        Player targetPlayer = Bukkit.getPlayer(args[2]);
+                        if (targetPlayer != null) {
+                            teamManager.removePlayerFromTeam(teamName, targetPlayer);
+                            player.sendMessage("§6[배틀로얄] §f" + targetPlayer.getName() + "님을 " + teamName + " 팀에서 제거했습니다.");
+                            return true;
+                        } else {
+                            player.sendMessage("§6[배틀로얄] §c플레이어를 찾을 수 없습니다.");
+                            return true;
+                        }
+                    }
+                } else if (args[0].equalsIgnoreCase("list")) {
+                    teamManager.listTeams(player);
+                    return true;
+                }
+            }
+            player.sendMessage("§6[배틀로얄] §f사용법: /brteam [create|add|remove|list]");
+            return true;
         }
         return false;
     }
@@ -206,6 +249,10 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabCompl
                     // Suggest common sizes or a placeholder
                     return Arrays.asList("2", "3", "4");
                 }
+            }
+        } else if (command.getName().equalsIgnoreCase("brteam")) {
+            if (args.length == 1) {
+                return Arrays.asList("create", "add", "remove", "list");
             }
         }
         return Collections.emptyList();
