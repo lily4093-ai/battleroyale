@@ -286,9 +286,27 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabCompl
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
         Player player = event.getEntity();
+        Player killer = player.getKiller();
+
         player.setGameMode(GameMode.SPECTATOR);
         deadPlayers.add(player.getUniqueId());
         player.sendMessage("§6[배틀로얄] §f당신은 사망하여 관전 모드로 전환됩니다.");
+
+        if (killer != null) {
+            Location killerLoc = killer.getLocation();
+            double distance = player.getLocation().distance(killerLoc);
+            player.sendMessage(String.format("§6[배틀로얄] §c%s§f님에게 살해당했습니다. (좌표: %d, %d, %d, 거리: %.2f)",
+                    killer.getName(), killerLoc.getBlockX(), killerLoc.getBlockY(), killerLoc.getBlockZ(), distance));
+
+            ItemStack mainHandItem = killer.getInventory().getItemInMainHand();
+            String itemName = mainHandItem.getType().toString();
+            if (mainHandItem.hasItemMeta() && mainHandItem.getItemMeta().hasDisplayName()) {
+                itemName = mainHandItem.getItemMeta().getDisplayName();
+            }
+            player.sendMessage("§6[배틀로얄] §f살해범이 들고 있던 아이템: §e" + itemName);
+
+            player.teleport(killer);
+        }
 
         Integer deadPlayerTeamNumber = teamManager.getPlayerTeams().get(player);
         if (deadPlayerTeamNumber != null) {
