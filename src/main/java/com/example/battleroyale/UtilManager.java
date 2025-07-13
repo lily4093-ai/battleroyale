@@ -173,7 +173,7 @@ public class UtilManager implements Listener {
             case COPPER_ORE:
             case DEEPSLATE_COPPER_ORE:
                 event.setDropItems(false);
-                loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.COPPER_INGOT, random.nextInt(5) + 1));
+                loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.COPPER_INGOT, random.nextInt(10) + 6));
                 break;
 
             // Lapis Ore
