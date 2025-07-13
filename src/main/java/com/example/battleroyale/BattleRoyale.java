@@ -24,7 +24,7 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.boss.BossBar;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
-import org.bukkit.command.TabCompleter; // Import TabCompleter
+import org.bukkit.command.TabCompleter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,17 +47,15 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabCompl
 
     @Override
     public void onEnable() {
-        // Plugin startup logic
         utilManager = new UtilManager(this);
         borderManager = new BorderManager(this, utilManager);
         teamManager = new TeamManager(borderManager);
         gameManager = new GameManager(this, borderManager, teamManager);
-        utilManager.setBorderManager(borderManager); // Set BorderManager in UtilManager
+        utilManager.setBorderManager(borderManager);
         Bukkit.getPluginManager().registerEvents(this, this);
-        getCommand("br").setTabCompleter(this); // Register TabCompleter
-        getCommand("brteam").setTabCompleter(this); // Register TabCompleter for brteam
+        getCommand("br").setTabCompleter(this);
+        getCommand("brteam").setTabCompleter(this);
 
-        // Initialize default items
         ItemStack pickaxe = new ItemStack(Material.DIAMOND_PICKAXE);
         ItemMeta pickaxeMeta = pickaxe.getItemMeta();
         pickaxeMeta.addEnchant(Enchantment.DIG_SPEED, 3, true);
@@ -79,7 +77,6 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabCompl
 
     @Override
     public void onDisable() {
-        // Plugin shutdown logic
     }
 
     @Override
@@ -90,7 +87,6 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabCompl
         }
         Player player = (Player) sender;
 
-        // Commands that are allowed for non-OPs
         List<String> allowedCommands = List.of("총", "chd", "빵", "기본템", "rlqhsxpa", "밥", "top", "탑");
 
         if (!allowedCommands.contains(command.getName().toLowerCase()) && !player.isOp()) {
@@ -104,12 +100,12 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabCompl
                     int size = Integer.parseInt(args[1]);
                     if (args[0].equalsIgnoreCase("startdefault")) {
                         player.sendMessage("§6[배틀로얄] §f기본 배틀로얄 게임을 시작합니다. 자기장 크기: §c" + size);
-                        deadPlayers.clear(); // Reset dead players on game start
+                        deadPlayers.clear();
                         gameManager.brGameinit("default", size);
                         return true;
                     } else if (args[0].equalsIgnoreCase("startim")) {
                         player.sendMessage("§6[배틀로얄] §f팀 배틀로얄 게임을 시작합니다. 자기장 크기: §c" + size);
-                        deadPlayers.clear(); // Reset dead players on game start
+                        deadPlayers.clear();
                         gameManager.brGameinit("im", size);
                         return true;
                     }
@@ -246,7 +242,6 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabCompl
             }
             if (args.length == 2) {
                 if (args[0].equalsIgnoreCase("startdefault") || args[0].equalsIgnoreCase("startim")) {
-                    // Suggest common sizes or a placeholder
                     return Arrays.asList("2", "3", "4");
                 }
             }
@@ -274,14 +269,12 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabCompl
     @EventHandler
     public void onEntityDeath(EntityDeathEvent event) {
         if (event.getEntity() instanceof LivingEntity && !(event.getEntity() instanceof Player)) {
-            int gunpowderAmount = random.nextInt(5); // 0-4
+            int gunpowderAmount = random.nextInt(5);
             if (gunpowderAmount > 0) {
                 event.getEntity().getWorld().dropItemNaturally(event.getEntity().getLocation(), new ItemStack(Material.GUNPOWDER, gunpowderAmount));
             }
         }
     }
-
-    
 
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
@@ -294,17 +287,25 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabCompl
 
         if (killer != null) {
             Location killerLoc = killer.getLocation();
-            double distance = player.getLocation().distance(killerLoc);
-            player.sendMessage(String.format("§6[배틀로얄] §c%s§f님에게 살해당했습니다. (좌표: %d, %d, %d, 거리: %.2f)",
-                    killer.getName(), killerLoc.getBlockX(), killerLoc.getBlockY(), killerLoc.getBlockZ(), distance));
-
-            ItemStack mainHandItem = killer.getInventory().getItemInMainHand();
-            String itemName = mainHandItem.getType().toString();
-            if (mainHandItem.hasItemMeta() && mainHandItem.getItemMeta().hasDisplayName()) {
-                itemName = mainHandItem.getItemMeta().getDisplayName();
+            Location playerLoc = player.getLocation();
+            double distance = playerLoc.distance(killerLoc);
+            
+            // 거리와 좌표 정보
+            player.sendMessage(String.format("§6[배틀로얄] §c%s§f님에게 살해당했습니다. (거리: %.1f미터)", killer.getName(), distance));
+            player.sendMessage(String.format("§6[배틀로얄] §f살해 위치: §eX: %d, Y: %d, Z: %d", 
+                playerLoc.getBlockX(), playerLoc.getBlockY(), playerLoc.getBlockZ()));
+            
+            // 살해자가 들고 있던 아이템 정보
+            ItemStack weapon = killer.getInventory().getItemInMainHand();
+            String weaponName = weapon.getType().toString();
+            if (weapon.hasItemMeta() && weapon.getItemMeta().hasDisplayName()) {
+                weaponName = weapon.getItemMeta().getDisplayName();
             }
-            player.sendMessage("§6[배틀로얄] §f살해범이 들고 있던 아이템: §e" + itemName);
-
+            player.sendMessage(String.format("§6[배틀로얄] §f살해자가 사용한 무기: §e%s", weaponName));
+            
+            // 살해자에게도 메시지 전송
+            killer.sendMessage(String.format("§6[배틀로얄] §a%s§f님을 처치했습니다! (거리: %.1f미터)", player.getName(), distance));
+            
             player.teleport(killer);
         }
 
@@ -320,7 +321,7 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabCompl
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        borderManager.addPlayerToBossBar(player); // Add player to BossBar on join
+        borderManager.addPlayerToBossBar(player);
         if (GameManager.isIngame() && deadPlayers.contains(player.getUniqueId())) {
             player.setGameMode(GameMode.SPECTATOR);
             player.sendMessage("§6[배틀로얄] §f당신은 이전에 사망하여 관전 모드로 접속했습니다.");
@@ -330,7 +331,7 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabCompl
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
-        borderManager.removePlayerFromBossBar(player); // Remove player from BossBar on quit
+        borderManager.removePlayerFromBossBar(player);
         if (GameManager.isIngame() && player.getGameMode() != GameMode.SPECTATOR) {
             deadPlayers.add(player.getUniqueId());
             Integer teamNumber = teamManager.getPlayerTeams().get(player);
@@ -371,10 +372,10 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabCompl
     public void onBlockBreak(BlockBreakEvent event) {
         Material type = event.getBlock().getType();
         if (type == Material.IRON_ORE) {
-            event.setDropItems(false); // 기본 드롭 취소
+            event.setDropItems(false);
             event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.IRON_INGOT, 1));
         } else if (type == Material.GOLD_ORE) {
-            event.setDropItems(false); // 기본 드롭 취소
+            event.setDropItems(false);
             event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.GOLD_INGOT, 1));
         }
     }
