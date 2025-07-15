@@ -95,7 +95,7 @@ public class BorderManager {
 
         // Stop the waiting boss bar updater and start the first countdown
         stopCountdown(); // Ensure no other countdown is running
-        startCountdown(countdownTimes[currentPhase]); // Start countdown to the first shrink
+        startCountdown(countdownTimes.get(currentPhase)); // Start countdown to the first shrink
         
         // 즉시 보스바 업데이트 (게임 시작 직후)
         updateBossBarForAllPlayers(currentSize);
@@ -144,8 +144,8 @@ public class BorderManager {
                     }
                     
                     // 자기장 축소 완료 후 다음 축소까지 대기 시간 설정
-                    if (currentPhase < countdownTimes.length) {
-                        startCountdown(countdownTimes[currentPhase]);
+                    if (currentPhase < countdownTimes.size()) {
+                        startCountdown(countdownTimes.get(currentPhase));
                     } else {
                         // Handle case where there are no more countdowns defined (e.g., game end)
                     }
@@ -251,7 +251,7 @@ public class BorderManager {
                 if (countdownSeconds <= 0) {
                     isCountdownActive = false;
                     // 자동으로 다음 자기장 축소 시작
-                    if (currentPhase + 1 < borderSizes.length) {
+                    if (currentPhase + 1 < borderSizes.size()) {
                         brShrinkborder();
                     } else {
                         // All phases completed, end the game
