@@ -1,14 +1,10 @@
 package com.example.battleroyale;
 
-import net.md_5.bungee.api.ChatMessageType;
-import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
-import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.scheduler.BukkitRunnable;
 
 public class GameManager {
 
@@ -16,10 +12,7 @@ public class GameManager {
     
     private BorderManager borderManager;
     private TeamManager teamManager;
-    private final BattleRoyale plugin;
-
-    public GameManager(BattleRoyale plugin, BorderManager borderManager, TeamManager teamManager) {
-        this.plugin = plugin;
+    public GameManager(BattleRoyale borderManager, TeamManager teamManager) {
         this.borderManager = borderManager;
         this.teamManager = teamManager;
     }
