@@ -54,6 +54,35 @@
     *   일부 아이템(인챈트된 황금 사과, 엔드 수정, 리스폰 앵커, 불사의 토템, 물약, 화살, 침대)의 조합이 비활성화됩니다.
     *   나침반이 자기장 중앙을 가리키도록 업데이트됩니다.
 
+## 설정 (config.yml)
+
+플러그인의 `config.yml` 파일을 통해 다양한 게임 설정을 변경할 수 있습니다. 이 파일은 플러그인이 처음 로드될 때 자동으로 생성됩니다.
+
+```yaml
+# Battle Royale Plugin Configuration
+
+# Border Settings
+border:
+  sizes: [2500, 2000, 1500, 1000, 500, 100, 10, 0] # 자기장 각 단계의 크기 (블록 단위)
+  countdown_times: [400, 250, 150, 100, 60, 60, 60] # 자기장 축소 전 대기 시간 (틱 단위, 20틱 = 1초)
+
+# Supply Drop Settings
+supply_drop:
+  interval_minutes: 4 # 보급품이 소환되는 주기 (분 단위)
+  items: # 보급품 상자에 포함될 아이템 목록
+    - 'BLAZE_ROD:1-5' # 아이템:최소수량-최대수량 (랜덤)
+    - 'NETHERITE_INGOT:1-2'
+    - 'QUARTZ:5-10'
+    - 'GLOWSTONE_DUST:5-8'
+    - 'IRON_INGOT:64' # 아이템:고정수량
+    - 'IRON_INGOT:32-64'
+    - 'GOLD_INGOT:10-30'
+
+# Game Settings
+game:
+  min_players_per_team: 2 # 팀당 최소 플레이어 수. 이보다 적으면 게임 시작 시 경고 메시지가 표시됩니다.
+```
+
 ## 명령어
 
 다음은 이 플러그인에서 사용 가능한 명령어 목록입니다.
