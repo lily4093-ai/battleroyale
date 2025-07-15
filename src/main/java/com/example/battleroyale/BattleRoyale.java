@@ -47,7 +47,7 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabExecu
         utilManager = new UtilManager(this);
         borderManager = new BorderManager(this, utilManager);
         teamManager = new TeamManager(borderManager);
-        gameManager = new GameManager(this, borderManager, teamManager);
+        gameManager = new GameManager(borderManager, teamManager);
         utilManager.setBorderManager(borderManager);
         Bukkit.getPluginManager().registerEvents(this, this);
         getCommand("br").setTabCompleter(this);
