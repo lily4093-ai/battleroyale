@@ -21,10 +21,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.enchantments.Enchantment;
-import org.bukkit.boss.BossBar;
-import org.bukkit.boss.BarColor;
-import org.bukkit.boss.BarStyle;
-import org.bukkit.command.TabCompleter;
+import org.bukkit.command.TabExecutor;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,7 +32,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 
-public final class BattleRoyale extends JavaPlugin implements Listener, TabCompleter {
+public final class BattleRoyale extends JavaPlugin implements Listener, TabExecutor {
 
     private GameManager gameManager;
     private BorderManager borderManager;
