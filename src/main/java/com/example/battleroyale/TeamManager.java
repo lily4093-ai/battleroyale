@@ -15,9 +15,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
 
-
-public class TeamManager {
+public class TeamManager implements org.bukkit.command.CommandExecutor {
 
     private Scoreboard scoreboard;
     private BorderManager borderManager;
@@ -191,5 +192,11 @@ public class TeamManager {
             }
             player.sendMessage("§6[배틀로얄] §f" + entry.getKey() + ": " + members.toString());
         }
+    }
+
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        // Command handling logic will be moved here from BattleRoyale.java
+        return false;
     }
 }
