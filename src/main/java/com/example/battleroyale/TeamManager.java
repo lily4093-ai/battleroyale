@@ -7,6 +7,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 import org.bukkit.GameMode;
+import org.bukkit.configuration.file.FileConfiguration;
+import java.util.logging.Logger;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -21,10 +23,14 @@ public class TeamManager {
     private BorderManager borderManager;
     private Map<Player, Integer> playerTeams = new HashMap<>();
     private Map<String, List<Player>> customTeams = new HashMap<>();
+    private FileConfiguration config;
+    private final Logger logger;
 
-    public TeamManager(BorderManager borderManager) {
+    public TeamManager(BattleRoyale plugin, BorderManager borderManager, FileConfiguration config) {
         this.scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
         this.borderManager = borderManager;
+        this.config = config;
+        this.logger = Logger.getLogger("BattleRoyale");
     }
 
     public void splitTeam(int size) {
