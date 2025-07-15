@@ -15,6 +15,8 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.configuration.file.FileConfiguration;
+import java.util.logging.Logger;
 
 import java.util.Arrays;
 import java.util.List;
@@ -25,15 +27,25 @@ public class UtilManager implements Listener {
     private BattleRoyale plugin;
     private BorderManager borderManager;
     private final List<Material> disabledCrafting;
+    private FileConfiguration config;
+    private List<String> supplyDropItemsConfig;
+    private int supplyDropIntervalMinutes;
+    private final Logger logger;
 
-    public UtilManager(BattleRoyale plugin) {
+    public UtilManager(BattleRoyale plugin, FileConfiguration config) {
         this.plugin = plugin;
+        this.config = config;
+        this.logger = Logger.getLogger("BattleRoyale");
         this.disabledCrafting = Arrays.asList(
                 Material.ENCHANTED_GOLDEN_APPLE,
                 Material.END_CRYSTAL,
                 Material.RESPAWN_ANCHOR,
                 Material.TOTEM_OF_UNDYING
         );
+
+        // Load config values
+        this.supplyDropIntervalMinutes = config.getInt("supply_drop.interval_minutes", 4);
+        this.supplyDropItemsConfig = config.getStringList("supply_drop.items");
 
         // 이벤트 리스너 등록
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
@@ -45,8 +57,7 @@ public class UtilManager implements Listener {
                     spawnSupplyDrop();
                 }
             }
-        }.runTaskTimer(plugin, 20L * 60 * 4, 20L * 60 * 4); // Every 4 minutes
-    }
+        }.runTaskTimer(plugin, 20L * 60 * supplyDropIntervalMinutes, 20L * 60 * supplyDropIntervalMinutes); // Configurable interval
 
     public void setBorderManager(BorderManager borderManager) {
         this.borderManager = borderManager;
@@ -86,21 +97,39 @@ public class UtilManager implements Listener {
         Chest chest = (Chest) spawnLoc.getBlock().getState();
         
         // 보급품 아이템 설정
-        ItemStack[] items = {
-            new ItemStack(Material.BLAZE_ROD, random.nextInt(5) + 1),
-            new ItemStack(Material.NETHERITE_INGOT, random.nextInt(2) + 1),
-            new ItemStack(Material.QUARTZ, random.nextInt(6) + 5),
-            new ItemStack(Material.GLOWSTONE_DUST, random.nextInt(4) + 5),
-            new ItemStack(Material.IRON_INGOT, 64),
-            new ItemStack(Material.IRON_INGOT, random.nextInt(33) + 32),
-            new ItemStack(Material.GOLD_INGOT, random.nextInt(21) + 10)
-        };
-        
-        for (int i = 0; i < items.length; i++) {
-            chest.getInventory().setItem(i, items[i]);
+        for (String itemString : supplyDropItemsConfig) {
+            ItemStack item = parseItemStack(itemString);
+            if (item != null) {
+                chest.getInventory().addItem(item);
+            }
         }
 
         Bukkit.broadcastMessage("§6[배틀로얄] §f(" + (int) spawnLoc.getX() + ", " + (int) spawnLoc.getZ() + ") 에 보급이 소환되었습니다!");
+    }
+
+    private ItemStack parseItemStack(String itemString) {
+        try {
+            String[] parts = itemString.split(":");
+            Material material = Material.valueOf(parts[0].toUpperCase());
+            int amount;
+
+            if (parts.length > 1) {
+                String[] amountParts = parts[1].split("-");
+                if (amountParts.length == 2) {
+                    int min = Integer.parseInt(amountParts[0]);
+                    int max = Integer.parseInt(amountParts[1]);
+                    amount = random.nextInt(max - min + 1) + min;
+                } else {
+                    amount = Integer.parseInt(amountParts[0]);
+                }
+            } else {
+                amount = 1; // Default amount if not specified
+            }
+            return new ItemStack(material, amount);
+        } catch (IllegalArgumentException e) {
+            plugin.getLogger().warning("Invalid item configuration in config.yml: " + itemString + " - " + e.getMessage());
+            return null;
+        }
     }
 
     @EventHandler
