@@ -203,38 +203,31 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabExecu
 
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
-        Player player = event.getEntity();
-        Player killer = player.getKiller();
+        Player victim = event.getEntity();
+        Player killer = victim.getKiller();
 
-        player.setGameMode(GameMode.SPECTATOR);
-        deadPlayers.add(player.getUniqueId());
-        player.sendMessage("§6[배틀로얄] §f당신은 사망하여 관전 모드로 전환됩니다.");
+        event.setDeathMessage(null); // 기본 킬로그 제거
+
+        victim.setGameMode(GameMode.SPECTATOR);
+        deadPlayers.add(victim.getUniqueId());
 
         if (killer != null) {
             Location killerLoc = killer.getLocation();
-            Location playerLoc = player.getLocation();
+            Location playerLoc = victim.getLocation();
             double distance = playerLoc.distance(killerLoc);
-            
-            // 거리와 좌표 정보
-            player.sendMessage(String.format("§6[배틀로얄] §c%s§f님에게 살해당했습니다. (거리: %.1f미터)", killer.getName(), distance));
-            player.sendMessage(String.format("§6[배틀로얄] §f살해 위치: §eX: %d, Y: %d, Z: %d", 
-                playerLoc.getBlockX(), playerLoc.getBlockY(), playerLoc.getBlockZ()));
-            
-            // 살해자가 들고 있던 아이템 정보
-            ItemStack weapon = killer.getInventory().getItemInMainHand();
-            String weaponName = weapon.getType().toString();
-            if (weapon.hasItemMeta() && weapon.getItemMeta().hasDisplayName()) {
-                weaponName = weapon.getItemMeta().getDisplayName();
-            }
-            player.sendMessage(String.format("§6[배틀로얄] §f살해자가 사용한 무기: §e%s", weaponName));
-            
-            // 살해자에게도 메시지 전송
-            killer.sendMessage(String.format("§6[배틀로얄] §a%s§f님을 처치했습니다! (거리: %.1f미터)", player.getName(), distance));
-            
-            player.teleport(killer);
+
+            Integer killerTeam = teamManager.getPlayerTeamNumber(killer);
+            Integer victimTeam = teamManager.getPlayerTeamNumber(victim);
+
+            String killerTeamStr = (killerTeam != null) ? "[TEAM " + killerTeam + "] " : "";
+            String victimTeamStr = (victimTeam != null) ? "[TEAM " + victimTeam + "] " : "";
+
+            String killMessage = String.format("§6[배틀로얄] %s%s §f▶ %s%s (§e%.0fm§f)",
+                    killerTeamStr, killer.getName(), victimTeamStr, victim.getName(), distance);
+            Bukkit.broadcastMessage(killMessage);
         }
 
-        Integer deadPlayerTeamNumber = teamManager.getPlayerTeams().get(player);
+        Integer deadPlayerTeamNumber = teamManager.getPlayerTeams().get(victim);
         if (deadPlayerTeamNumber != null) {
             if (teamManager.isTeamEliminated(deadPlayerTeamNumber)) {
                 Bukkit.broadcastMessage("§6[배틀로얄] §c" + deadPlayerTeamNumber + " 팀이 전멸했습니다!");
