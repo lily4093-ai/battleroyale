@@ -136,7 +136,7 @@ public class BorderManager {
 
                     Bukkit.broadcastMessage("§6[배틀로얄] §a자기장 축소가 완료되었습니다!");
 
-                    if (currentPhase + 1 < borderSizes.length) {
+                    if (currentPhase + 1 < borderSizes.size()) {
                         double nextSize = getBorderSize(currentPhase + 1);
                         Location randomCenter = makeRandomcenter(currentSize, nextSize, borderCenterX, borderCenterZ);
                         nextBorderCenterX = randomCenter.getX();
