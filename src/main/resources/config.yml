@@ -4,6 +4,7 @@
 border:
   sizes: [2500, 2000, 1500, 1000, 500, 100, 10, 0]
   countdown_times: [400, 250, 150, 100, 60, 60, 60]
+  speed: 1.0 # Speed at which the border shrinks (blocks per tick)
 
 # Supply Drop Settings
 supply_drop:
