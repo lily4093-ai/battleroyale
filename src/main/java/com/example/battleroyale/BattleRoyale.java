@@ -38,6 +38,9 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabExecu
     private BorderManager borderManager;
     private GameManager gameManager;
     private UtilManager utilManager;
+    private List<ItemStack> defaultItems = new ArrayList<>();
+    private Random random = new Random();
+    private Set<UUID> deadPlayers = new HashSet<>();
 
     @Override
     public void onEnable() {
@@ -130,38 +133,6 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabExecu
                 player.getInventory().addItem(item);
             }
             return true;
-        } else if (command.getName().equalsIgnoreCase("teamtest")) {
-            player.sendMessage("§6[배틀로얄] §f팀 테스트를 시작합니다.");
-            teamManager.splitTeam(2);
-            return true;
-        } else if (command.getName().equalsIgnoreCase("팀가르기")) {
-            if (args.length > 0) {
-                try {
-                    int size = Integer.parseInt(args[0]);
-                    player.sendMessage("§6[배틀로얄] §f" + size + "개의 팀으로 플레이어를 나눕니다.");
-                    teamManager.splitTeam(size);
-                    return true;
-                } catch (NumberFormatException e) {
-                    player.sendMessage("§6[배틀로얄] §c유효한 숫자를 입력해주세요.");
-                    return true;
-                }
-            }
-            player.sendMessage("§6[배틀로얄] §f사용법: /팀가르기 [팀 개수]");
-            return true;
-        } else if (command.getName().equalsIgnoreCase("팀참여")) {
-            if (args.length > 0) {
-                try {
-                    int teamNumber = Integer.parseInt(args[0]);
-                    teamManager.joinTeam(player, teamNumber);
-                    player.sendMessage("§6[배틀로얄] §f" + teamNumber + " 팀에 참여했습니다!");
-                    return true;
-                } catch (NumberFormatException e) {
-                    player.sendMessage("§6[배틀로얄] §c유효한 팀 번호를 입력해주세요.");
-                    return true;
-                }
-            }
-            player.sendMessage("§6[배틀로얄] §f사용법: /팀참여 [팀 번호]");
-            return true;
         } else if (command.getName().equalsIgnoreCase("suplytest")) {
             player.sendMessage("§6[배틀로얄] §f보급을 소환합니다.");
             utilManager.spawnSupplyDrop();
@@ -183,48 +154,6 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabExecu
             Location highestBlock = player.getWorld().getHighestBlockAt(loc.getBlockX(), loc.getBlockZ()).getLocation();
             player.teleport(highestBlock.add(0, 1, 0));
             player.sendMessage("§6[배틀로얄] §f가장 높은 블록으로 이동했습니다.");
-            return true;
-        } else if (command.getName().equalsIgnoreCase("brteam")) {
-            if (args.length > 0) {
-                if (args[0].equalsIgnoreCase("create")) {
-                    if (args.length > 1) {
-                        String teamName = args[1];
-                        teamManager.createTeam(teamName);
-                        player.sendMessage("§6[배틀로얄] §f" + teamName + " 팀을 생성했습니다.");
-                        return true;
-                    }
-                } else if (args[0].equalsIgnoreCase("add")) {
-                    if (args.length > 2) {
-                        String teamName = args[1];
-                        Player targetPlayer = Bukkit.getPlayer(args[2]);
-                        if (targetPlayer != null) {
-                            teamManager.addPlayerToTeam(teamName, targetPlayer);
-                            player.sendMessage("§6[배틀로얄] §f" + targetPlayer.getName() + "님을 " + teamName + " 팀에 추가했습니다.");
-                            return true;
-                        } else {
-                            player.sendMessage("§6[배틀로얄] §c플레이어를 찾을 수 없습니다.");
-                            return true;
-                        }
-                    }
-                } else if (args[0].equalsIgnoreCase("remove")) {
-                    if (args.length > 2) {
-                        String teamName = args[1];
-                        Player targetPlayer = Bukkit.getPlayer(args[2]);
-                        if (targetPlayer != null) {
-                            teamManager.removePlayerFromTeam(teamName, targetPlayer);
-                            player.sendMessage("§6[배틀로얄] §f" + targetPlayer.getName() + "님을 " + teamName + " 팀에서 제거했습니다.");
-                            return true;
-                        } else {
-                            player.sendMessage("§6[배틀로얄] §c플레이어를 찾을 수 없습니다.");
-                            return true;
-                        }
-                    }
-                } else if (args[0].equalsIgnoreCase("list")) {
-                    teamManager.listTeams(player);
-                    return true;
-                }
-            }
-            player.sendMessage("§6[배틀로얄] §f사용법: /brteam [create|add|remove|list]");
             return true;
         }
         return false;
