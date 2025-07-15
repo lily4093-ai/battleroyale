@@ -76,6 +76,10 @@ public class UtilManager implements Listener {
         return supplyDropIntervalMinutes;
     }
 
+    public long getSupplyDropTotalTicks() {
+        return 20L * 60 * supplyDropIntervalMinutes;
+    }
+
     public void setBorderManager(BorderManager borderManager) {
         this.borderManager = borderManager;
     }
