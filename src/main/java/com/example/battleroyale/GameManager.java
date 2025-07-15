@@ -5,6 +5,8 @@ import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.configuration.file.FileConfiguration;
+import java.util.logging.Logger;
 
 public class GameManager {
 
@@ -12,12 +14,25 @@ public class GameManager {
     
     private BorderManager borderManager;
     private TeamManager teamManager;
-    public GameManager(BorderManager borderManager, TeamManager teamManager) {
+    private FileConfiguration config;
+    private final Logger logger;
+
+    public GameManager(BorderManager borderManager, TeamManager teamManager, FileConfiguration config) {
         this.borderManager = borderManager;
         this.teamManager = teamManager;
+        this.config = config;
+        this.logger = Logger.getLogger("BattleRoyale");
     }
 
     public void brGameinit(String mode, int teamSize) {
+        int minPlayersPerTeam = config.getInt("game.min_players_per_team", 2);
+        int requiredPlayers = teamSize * minPlayersPerTeam;
+        if (Bukkit.getOnlinePlayers().size() < requiredPlayers) {
+            logger.warning("Not enough players to start the game with " + teamSize + " teams. Required: " + requiredPlayers + ", Online: " + Bukkit.getOnlinePlayers().size());
+            Bukkit.broadcastMessage("§c[배틀로얄] 게임 시작 실패: 팀당 최소 " + minPlayersPerTeam + "명 필요. 현재 플레이어 수: " + Bukkit.getOnlinePlayers().size() + ", 필요한 플레이어 수: " + requiredPlayers);
+            return;
+        }
+
         setIngame(true);
         borderManager.brBorderinit();
 
@@ -33,6 +48,7 @@ public class GameManager {
         } else if (mode.equalsIgnoreCase("im")) {
             teamManager.teamTP(teamSize);
         }
+        logger.info("Battle Royale game initialized in " + mode + " mode with " + teamSize + " teams.");
     }
 
     public static void setIngame(boolean ingame) {
