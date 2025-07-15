@@ -12,7 +12,7 @@ public class GameManager {
     
     private BorderManager borderManager;
     private TeamManager teamManager;
-    public GameManager(BattleRoyale borderManager, TeamManager teamManager) {
+    public GameManager(BorderManager borderManager, TeamManager teamManager) {
         this.borderManager = borderManager;
         this.teamManager = teamManager;
     }
