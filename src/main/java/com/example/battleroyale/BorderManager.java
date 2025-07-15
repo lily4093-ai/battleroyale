@@ -388,7 +388,7 @@ public class BorderManager {
         for (Player player : Bukkit.getOnlinePlayers()) {
             player.teleport(centerLoc);
             player.setGameMode(org.bukkit.GameMode.SURVIVAL);
-            player.setHealth(player.getMaxHealth()); // Full health
+            player.setHealth(player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getDefaultValue()); // Full health
             player.setFoodLevel(20); // Full food
             player.setSaturation(20); // Full saturation
             player.getInventory().clear(); // Clear inventory
