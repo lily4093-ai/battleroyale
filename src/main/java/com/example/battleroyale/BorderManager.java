@@ -14,6 +14,7 @@ import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.configuration.file.FileConfiguration;
 import java.util.logging.Logger;
+import org.bukkit.Material;
 
 import java.util.HashMap;
 import java.util.Map;
