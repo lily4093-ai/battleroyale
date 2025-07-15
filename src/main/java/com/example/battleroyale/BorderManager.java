@@ -34,7 +34,7 @@ public class BorderManager {
     private double nextBorderCenterX;
     private double nextBorderCenterZ;
     private boolean isShrinking = false;
-    private double borderSpeed;
+    private List<Double> borderSpeed;
     private final Map<UUID, BossBar> playerBossBars = new HashMap<>();
     private int currentPhase;
     
@@ -61,7 +61,7 @@ public class BorderManager {
         // Load border sizes and countdown times from config
         this.borderSizes = config.getDoubleList("border.sizes");
         this.countdownTimes = config.getIntegerList("border.countdown_times");
-        this.borderSpeed = config.getDouble("border.speed", 1.0);
+        this.borderSpeed = config.getDoubleList("border.speed");
 
         this.currentSize = borderSizes.get(0); // Set initial size to the first value in borderSizes list
         this.borderCenterX = 0; // Default center X
@@ -112,8 +112,8 @@ public class BorderManager {
         // 카운트다운 중지
         stopCountdown();
 
-        long shrinkDurationTicks = (long) ((prevSize - newSize) / borderSpeed * 20);
-        border.setSize(newSize, (long)((prevSize - newSize) / borderSpeed));
+        long shrinkDurationTicks = (long) ((prevSize - newSize) / borderSpeed.get(Math.min(currentPhase, borderSpeed.size() - 1)) * 20);
+        border.setSize(newSize, (long)((prevSize - newSize) / borderSpeed.get(Math.min(currentPhase, borderSpeed.size() - 1))));
         setBorderCenter(prevSize, border.getCenter().getX(), border.getCenter().getZ(), centerX, centerZ, shrinkDurationTicks);
     }
 
