@@ -12,6 +12,8 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.attribute.Attribute;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
+import org.bukkit.configuration.file.FileConfiguration;
+import java.util.logging.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -22,8 +24,8 @@ public class BorderManager {
 
     private WorldBorder border;
     private World world;
-    private double[] borderSizes = {2500, 2000, 1500, 1000, 500, 100, 10, 0};
-    private int[] countdownTimes = {400, 250, 150, 100, 60, 60, 60};
+    private List<Double> borderSizes;
+    private List<Integer> countdownTimes;
     private double currentSize;
     private double borderCenterX;
     private double borderCenterZ;
@@ -43,13 +45,22 @@ public class BorderManager {
     private BukkitRunnable bossBarUpdateTask;
     private UtilManager utilManager;
     private BattleRoyale plugin; // Add plugin field
+    private FileConfiguration config;
+    private final Logger logger;
 
-    public BorderManager(BattleRoyale plugin, UtilManager utilManager) {
+    public BorderManager(BattleRoyale plugin, UtilManager utilManager, FileConfiguration config) {
         this.plugin = plugin;
         this.utilManager = utilManager;
+        this.config = config;
+        this.logger = Logger.getLogger("BattleRoyale");
         this.world = Bukkit.getWorlds().get(0);
         this.border = world.getWorldBorder();
-        this.currentSize = borderSizes[0]; // Set initial size to the first value in borderSizes array
+
+        // Load border sizes and countdown times from config
+        this.borderSizes = config.getDoubleList("border.sizes");
+        this.countdownTimes = config.getIntegerList("border.countdown_times");
+
+        this.currentSize = borderSizes.get(0); // Set initial size to the first value in borderSizes list
         this.borderCenterX = 0; // Default center X
         this.borderCenterZ = 0; // Default center Z
         
@@ -61,8 +72,8 @@ public class BorderManager {
     }
 
     public double getBorderSize(int phase) {
-        if (phase >= 0 && phase < borderSizes.length) {
-            return borderSizes[phase];
+        if (phase >= 0 && phase < borderSizes.size()) {
+            return borderSizes.get(phase);
         }
         return 0;
     }
