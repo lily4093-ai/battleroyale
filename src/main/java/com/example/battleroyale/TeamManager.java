@@ -172,6 +172,10 @@ public class TeamManager implements org.bukkit.command.CommandExecutor {
         return true; // No living players found in the team, so team is eliminated.
     }
 
+    public Integer getPlayerTeamNumber(Player player) {
+        return playerTeams.get(player);
+    }
+
     public void createTeam(String teamName) {
         customTeams.put(teamName, new ArrayList<>());
     }
