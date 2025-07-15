@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Map;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import java.util.Set;
+import java.util.UUID;
 
 public class TeamManager implements org.bukkit.command.CommandExecutor {
 
@@ -26,12 +28,14 @@ public class TeamManager implements org.bukkit.command.CommandExecutor {
     private Map<String, List<Player>> customTeams = new HashMap<>();
     private FileConfiguration config;
     private final Logger logger;
+    private Set<UUID> deadPlayers;
 
-    public TeamManager(BattleRoyale plugin, BorderManager borderManager, FileConfiguration config) {
+    public TeamManager(BattleRoyale plugin, BorderManager borderManager, FileConfiguration config, Set<UUID> deadPlayers) {
         this.scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
         this.borderManager = borderManager;
         this.config = config;
         this.logger = Logger.getLogger("BattleRoyale");
+        this.deadPlayers = deadPlayers;
     }
 
     public void splitTeam(int size) {
@@ -164,7 +168,7 @@ public class TeamManager implements org.bukkit.command.CommandExecutor {
     public boolean isTeamEliminated(int teamNumber) {
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (playerTeams.containsKey(player) && playerTeams.get(player) == teamNumber) {
-                if (player.getGameMode() != GameMode.SPECTATOR) {
+                if (player.getGameMode() != GameMode.SPECTATOR && !deadPlayers.contains(player.getUniqueId())) {
                     return false; // Found a living player, so team is not eliminated.
                 }
             }
