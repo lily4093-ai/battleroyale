@@ -81,7 +81,7 @@ public class BorderManager {
 
     public void brBorderinit() {
         currentPhase = 0; // Start from phase 0
-        currentSize = borderSizes[currentPhase]; // Initial size 2500
+        currentSize = borderSizes.get(currentPhase); // Initial size 2500
         borderCenterX = 0; // Start at center 0,0
         borderCenterZ = 0;
         border.setCenter(borderCenterX, borderCenterZ);
