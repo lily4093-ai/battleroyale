@@ -34,42 +34,41 @@ import java.util.UUID;
 
 public final class BattleRoyale extends JavaPlugin implements Listener, TabExecutor {
 
-    private GameManager gameManager;
-    private BorderManager borderManager;
     private TeamManager teamManager;
+    private BorderManager borderManager;
+    private GameManager gameManager;
     private UtilManager utilManager;
-    private List<ItemStack> defaultItems = new ArrayList<>();
-    private Random random = new Random();
-    private Set<UUID> deadPlayers = new HashSet<>();
 
     @Override
     public void onEnable() {
-        utilManager = new UtilManager(this);
-        borderManager = new BorderManager(this, utilManager);
-        teamManager = new TeamManager(borderManager);
-        gameManager = new GameManager(borderManager, teamManager);
-        utilManager.setBorderManager(borderManager);
-        Bukkit.getPluginManager().registerEvents(this, this);
-        getCommand("br").setTabCompleter(this);
-        getCommand("brteam").setTabCompleter(this);
-
-        ItemStack pickaxe = new ItemStack(Material.DIAMOND_PICKAXE);
-        ItemMeta pickaxeMeta = pickaxe.getItemMeta();
-        pickaxeMeta.addEnchant(Enchantment.DIG_SPEED, 3, true);
-        pickaxeMeta.addEnchant(Enchantment.DURABILITY, 3, true);
-        pickaxe.setItemMeta(pickaxeMeta);
-        defaultItems.add(pickaxe);
+        // Save default config if it doesn't exist
+        saveDefaultConfig();
         
-        ItemStack axe = new ItemStack(Material.DIAMOND_AXE);
-        ItemMeta axeMeta = axe.getItemMeta();
-        axeMeta.addEnchant(Enchantment.DIG_SPEED, 3, true);
-        axeMeta.addEnchant(Enchantment.DURABILITY, 3, true);
-        axe.setItemMeta(axeMeta);
-        defaultItems.add(axe);
+        getLogger().info("BattleRoyale Plugin Enabled!");
 
-        defaultItems.add(new ItemStack(Material.BREAD, 64));
-        defaultItems.add(new ItemStack(Material.ENCHANTING_TABLE, 1));
-        defaultItems.add(new ItemStack(Material.BOOKSHELF, 64));
+        // Initialize managers
+        utilManager = new UtilManager(this, getConfig());
+        borderManager = new BorderManager(this, utilManager, getConfig());
+        teamManager = new TeamManager(this, borderManager, getConfig());
+        gameManager = new GameManager(borderManager, teamManager, getConfig());
+        utilManager.setBorderManager(borderManager); // Set BorderManager in UtilManager
+
+        // Register commands
+        getCommand("brteam").setExecutor(teamManager);
+        getCommand("br").setExecutor(this);
+        getCommand("chd").setExecutor(this);
+        getCommand("총").setExecutor(this);
+        getCommand("기본템설정").setExecutor(this);
+        getCommand("기본템").setExecutor(this);
+        getCommand("rlqhsxpa").setExecutor(this);
+        getCommand("teamtest").setExecutor(teamManager);
+        getCommand("팀가르기").setExecutor(teamManager);
+        getCommand("팀참여").setExecutor(teamManager);
+        getCommand("suplytest").setExecutor(this);
+        getCommand("밥").setExecutor(this);
+        getCommand("강제종료").setExecutor(this);
+        getCommand("top").setExecutor(this);
+        getCommand("탑").setExecutor(this);
     }
 
     @Override
