@@ -9,6 +9,7 @@ import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.attribute.Attribute;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 
@@ -291,7 +292,7 @@ public class BorderManager {
 
         double playerX = player.getLocation().getX();
         double playerZ = player.getLocation().getZ();
-        double playerYaw = player.getLocation().getYaw();
+        
 
         // Chebyshev distance for square border
         double dx = Math.abs(playerX - borderCenterX);
@@ -316,31 +317,7 @@ public class BorderManager {
         bar.setProgress(Math.max(0.0, Math.min(1.0, progress)));
     }
 
-    private String getDirectionArrow(double playerX, double playerZ, double playerYaw, double targetX, double targetZ) {
-        // 플레이어에서 타겟까지의 방향 벡터
-        double dx = targetX - playerX;
-        double dz = targetZ - playerZ;
-        
-        // 타겟 방향의 각도 계산 (북쪽 기준, 시계방향)
-        double targetAngle = Math.toDegrees(Math.atan2(dx, -dz));
-        
-        // 플레이어의 yaw 값 정규화 (북쪽 기준, 시계방향)
-        double normalizedYaw = ((playerYaw % 360) + 360) % 360;
-        
-        // 플레이어 시점에서 타겟까지의 상대 각도
-        double relativeAngle = ((targetAngle - normalizedYaw) % 360 + 360) % 360;
-        
-        // 8방향 화살표 결정
-        if (relativeAngle >= 337.5 || relativeAngle < 22.5) return "↓";      // 뒤
-        else if (relativeAngle >= 22.5 && relativeAngle < 67.5) return "↙";  // 뒤-왼쪽
-        else if (relativeAngle >= 67.5 && relativeAngle < 112.5) return "←"; // 왼쪽
-        else if (relativeAngle >= 112.5 && relativeAngle < 157.5) return "↖"; // 앞-왼쪽
-        else if (relativeAngle >= 157.5 && relativeAngle < 202.5) return "↑"; // 앞
-        else if (relativeAngle >= 202.5 && relativeAngle < 247.5) return "↗"; // 앞-오른쪽
-        else if (relativeAngle >= 247.5 && relativeAngle < 292.5) return "→"; // 오른쪽
-        else if (relativeAngle >= 292.5 && relativeAngle < 337.5) return "↘"; // 뒤-오른쪽
-        return "↓";
-    }
+    
 
     // 보스바 업데이트 태스크 시작 (게임 중 항상 실행)
     public void startBossBarUpdater() {
