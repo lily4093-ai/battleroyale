@@ -33,7 +33,7 @@ public class BorderManager {
     private double nextBorderCenterX;
     private double nextBorderCenterZ;
     private boolean isShrinking = false;
-    private double borderSpeed = 1.0;
+    private double borderSpeed;
     private final Map<UUID, BossBar> playerBossBars = new HashMap<>();
     private int currentPhase;
     
@@ -60,6 +60,7 @@ public class BorderManager {
         // Load border sizes and countdown times from config
         this.borderSizes = config.getDoubleList("border.sizes");
         this.countdownTimes = config.getIntegerList("border.countdown_times");
+        this.borderSpeed = config.getDouble("border.speed", 1.0);
 
         this.currentSize = borderSizes.get(0); // Set initial size to the first value in borderSizes list
         this.borderCenterX = 0; // Default center X
@@ -212,11 +213,7 @@ public class BorderManager {
     }
 
     public void brShrinkborder() {
-        if (currentPhase == 1) borderSpeed = 2.5;      // 0.5 * 5
-        else if (currentPhase == 2) borderSpeed = 3.5;  // 0.7 * 5
-        else if (currentPhase == 3) borderSpeed = 5.0;  // 1.0 * 5
-        else if (currentPhase == 4) borderSpeed = 7.5;  // 1.5 * 5
-        else if (currentPhase >= 5) borderSpeed = 10.0; // 2.0 * 5
+        // No longer hardcoding borderSpeed based on phase, using config value
 
         double prevSize = currentSize;
         currentPhase++;
@@ -302,34 +299,53 @@ public class BorderManager {
         BossBar bar = playerBossBars.get(player.getUniqueId());
         if (bar == null) return;
 
-        double playerX = player.getLocation().getX();
-        double playerZ = player.getLocation().getZ();
-        
+        String title;
+        BarColor color = BarColor.BLUE;
+        BarStyle style = BarStyle.SOLID;
 
-        // Chebyshev distance for square border
-        double dx = Math.abs(playerX - borderCenterX);
-        double dz = Math.abs(playerZ - borderCenterZ);
-        double distance = Math.max(dx, dz);
+        if (player.getInventory().getItemInMainHand().getType() == Material.COMPASS) {
+            // Compass: Show border info
+            double playerX = player.getLocation().getX();
+            double playerZ = player.getLocation().getZ();
+            double dx = Math.abs(playerX - borderCenterX);
+            double dz = Math.abs(playerZ - borderCenterZ);
+            double distance = Math.max(dx, dz);
+            double halfSize = borderSize / 2;
+            double progress = (distance <= halfSize) ? 1.0 - (distance / halfSize) : 0.0;
 
-        double halfSize = borderSize / 2;
-        double progress = (distance <= halfSize) ? 1.0 - (distance / halfSize) : 0.0;
+            if (progress > 0.7) color = BarColor.GREEN;
+            else if (progress > 0.4) color = BarColor.YELLOW;
+            else if (progress > 0.1) color = BarColor.RED;
+            else color = BarColor.PURPLE;
 
-        BarColor color;
-        if (progress > 0.7) color = BarColor.GREEN;
-        else if (progress > 0.4) color = BarColor.YELLOW;
-        else if (progress > 0.1) color = BarColor.RED;
-        else color = BarColor.PURPLE;
+            title = (distance <= halfSize)
+                    ? String.format("자기장 중심까지: %.0fm (크기: %.0fm)", distance, borderSize)
+                    : String.format("§c자기장 밖! 중심까지: %.0fm (크기: %.0fm)", distance, borderSize);
+            bar.setProgress(Math.max(0.0, Math.min(1.0, progress)));
+        } else if (player.getInventory().getItemInMainHand().getType() == Material.CLOCK) {
+            // Clock: Show supply drop countdown
+            long remainingTicks = utilManager.getSupplyDropRemainingTicks();
+            if (remainingTicks > 0) {
+                long minutes = remainingTicks / (20 * 60);
+                long seconds = (remainingTicks / 20) % 60;
+                title = String.format("§e다음 보급까지: %02d분 %02d초", minutes, seconds);
+                bar.setProgress((double) remainingTicks / (utilManager.getSupplyDropIntervalMinutes() * 20 * 60));
+            } else {
+                title = "§a보급품 대기 중...";
+                bar.setProgress(1.0);
+            }
+            color = BarColor.YELLOW;
+        } else {
+            // Default: No specific item held, hide boss bar or show generic message
+            bar.setVisible(false);
+            return;
+        }
 
-        String title = (distance <= halfSize)
-                ? String.format("자기장 중심까지: %.0fm (크기: %.0fm)", distance, borderSize)
-                : String.format("§c자기장 밖! 중심까지: %.0fm (크기: %.0fm)", distance, borderSize);
-
+        bar.setVisible(true);
         bar.setColor(color);
         bar.setTitle(title);
-        bar.setProgress(Math.max(0.0, Math.min(1.0, progress)));
+        bar.setStyle(style);
     }
-
-    
 
     // 보스바 업데이트 태스크 시작 (게임 중 항상 실행)
     public void startBossBarUpdater() {
@@ -343,9 +359,9 @@ public class BorderManager {
                     updateCountdownActionBar();
                 }
                 
-                // 보스바는 항상 업데이트 (자기장 축소 중이 아닐 때만 현재 크기로)
-                if (!isShrinking) {
-                    updateBossBarForAllPlayers(currentSize);
+                // 모든 플레이어의 보스바 업데이트 (들고 있는 아이템에 따라)
+                for (Player player : Bukkit.getOnlinePlayers()) {
+                    updateBossBarForPlayer(player, currentSize);
                 }
             }
         };
