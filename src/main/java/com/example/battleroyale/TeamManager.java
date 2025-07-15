@@ -196,7 +196,87 @@ public class TeamManager implements org.bukkit.command.CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        // Command handling logic will be moved here from BattleRoyale.java
+        if (!(sender instanceof Player)) {
+            sender.sendMessage("§c플레이어만 이 명령어를 사용할 수 있습니다.");
+            return true;
+        }
+        Player player = (Player) sender;
+
+        if (command.getName().equalsIgnoreCase("brteam")) {
+            if (args.length > 0) {
+                if (args[0].equalsIgnoreCase("create")) {
+                    if (args.length > 1) {
+                        String teamName = args[1];
+                        createTeam(teamName);
+                        player.sendMessage("§6[배틀로얄] §f" + teamName + " 팀을 생성했습니다.");
+                        return true;
+                    }
+                } else if (args[0].equalsIgnoreCase("add")) {
+                    if (args.length > 2) {
+                        String teamName = args[1];
+                        Player targetPlayer = Bukkit.getPlayer(args[2]);
+                        if (targetPlayer != null) {
+                            addPlayerToTeam(teamName, targetPlayer);
+                            player.sendMessage("§6[배틀로얄] §f" + targetPlayer.getName() + "님을 " + teamName + " 팀에 추가했습니다.");
+                            return true;
+                        } else {
+                            player.sendMessage("§6[배틀로얄] §c플레이어를 찾을 수 없습니다.");
+                            return true;
+                        }
+                    }
+                } else if (args[0].equalsIgnoreCase("remove")) {
+                    if (args.length > 2) {
+                        String teamName = args[1];
+                        Player targetPlayer = Bukkit.getPlayer(args[2]);
+                        if (targetPlayer != null) {
+                            removePlayerFromTeam(teamName, targetPlayer);
+                            player.sendMessage("§6[배틀로얄] §f" + targetPlayer.getName() + "님을 " + teamName + " 팀에서 제거했습니다.");
+                            return true;
+                        } else {
+                            player.sendMessage("§6[배틀로얄] §c플레이어를 찾을 수 없습니다.");
+                            return true;
+                        }
+                    }
+                } else if (args[0].equalsIgnoreCase("list")) {
+                    listTeams(player);
+                    return true;
+                }
+            }
+            player.sendMessage("§6[배틀로얄] §f사용법: /brteam [create|add|remove|list]");
+            return true;
+        } else if (command.getName().equalsIgnoreCase("teamtest")) {
+            player.sendMessage("§6[배틀로얄] §f팀 테스트를 시작합니다.");
+            splitTeam(2);
+            return true;
+        } else if (command.getName().equalsIgnoreCase("팀가르기")) {
+            if (args.length > 0) {
+                try {
+                    int size = Integer.parseInt(args[0]);
+                    player.sendMessage("§6[배틀로얄] §f" + size + "개의 팀으로 플레이어를 나눕니다.");
+                    splitTeam(size);
+                    return true;
+                } catch (NumberFormatException e) {
+                    player.sendMessage("§6[배틀로얄] §c유효한 숫자를 입력해주세요.");
+                    return true;
+                }
+            }
+            player.sendMessage("§6[배틀로얄] §f사용법: /팀가르기 [팀 개수]");
+            return true;
+        } else if (command.getName().equalsIgnoreCase("팀참여")) {
+            if (args.length > 0) {
+                try {
+                    int teamNumber = Integer.parseInt(args[0]);
+                    joinTeam(player, teamNumber);
+                    player.sendMessage("§6[배틀로얄] §f" + teamNumber + " 팀에 참여했습니다!");
+                    return true;
+                } catch (NumberFormatException e) {
+                    player.sendMessage("§6[배틀로얄] §c유효한 팀 번호를 입력해주세요.");
+                    return true;
+                }
+            }
+            player.sendMessage("§6[배틀로얄] §f사용법: /팀참여 [팀 번호]");
+            return true;
+        }
         return false;
     }
 }
