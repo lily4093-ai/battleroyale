@@ -1,0 +1,22 @@
+# Battle Royale Plugin Configuration
+
+# Border Settings
+border:
+  sizes: [2500, 2000, 1500, 1000, 500, 100, 10, 0]
+  countdown_times: [400, 250, 150, 100, 60, 60, 60]
+
+# Supply Drop Settings
+supply_drop:
+  interval_minutes: 4 # How often supply drops spawn in minutes
+  items:
+    - 'BLAZE_ROD:1-5'
+    - 'NETHERITE_INGOT:1-2'
+    - 'QUARTZ:5-10'
+    - 'GLOWSTONE_DUST:5-8'
+    - 'IRON_INGOT:64'
+    - 'IRON_INGOT:32-64'
+    - 'GOLD_INGOT:10-30'
+
+# Game Settings
+game:
+  min_players_per_team: 2 # Minimum players required per team for a warning
