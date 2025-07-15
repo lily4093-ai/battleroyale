@@ -31,13 +31,14 @@ public class UtilManager implements Listener {
     private List<String> supplyDropItemsConfig;
     private int supplyDropIntervalMinutes;
     private final Logger logger;
-    private final Random random; // Add this line
+    private final Random random;
+    private long supplyDropTimerTicks; // Add this field
 
     public UtilManager(BattleRoyale plugin, FileConfiguration config) {
         this.plugin = plugin;
         this.config = config;
         this.logger = Logger.getLogger("BattleRoyale");
-        this.random = new Random(); // Initialize Random here
+        this.random = new Random();
         this.disabledCrafting = Arrays.asList(
                 Material.ENCHANTED_GOLDEN_APPLE,
                 Material.END_CRYSTAL,
@@ -48,6 +49,7 @@ public class UtilManager implements Listener {
         // Load config values
         this.supplyDropIntervalMinutes = config.getInt("supply_drop.interval_minutes", 4);
         this.supplyDropItemsConfig = config.getStringList("supply_drop.items");
+        this.supplyDropTimerTicks = 20L * 60 * supplyDropIntervalMinutes; // Initialize timer
 
         // 이벤트 리스너 등록
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
@@ -56,10 +58,22 @@ public class UtilManager implements Listener {
             @Override
             public void run() {
                 if (GameManager.isIngame() && borderManager != null && borderManager.getCurrentPhase() >= 1) {
-                    spawnSupplyDrop();
+                    supplyDropTimerTicks -= 20; // Decrement by 1 second (20 ticks)
+                    if (supplyDropTimerTicks <= 0) {
+                        spawnSupplyDrop();
+                        supplyDropTimerTicks = 20L * 60 * supplyDropIntervalMinutes; // Reset timer
+                    }
                 }
             }
-        }.runTaskTimer(plugin, 20L * 60 * supplyDropIntervalMinutes, 20L * 60 * supplyDropIntervalMinutes); // Configurable interval
+        }.runTaskTimer(plugin, 0L, 20L); // Run every second
+    }
+
+    public long getSupplyDropRemainingTicks() {
+        return supplyDropTimerTicks;
+    }
+
+    public int getSupplyDropIntervalMinutes() {
+        return supplyDropIntervalMinutes;
     }
 
     public void setBorderManager(BorderManager borderManager) {
