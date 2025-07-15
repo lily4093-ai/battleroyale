@@ -330,7 +330,7 @@ public class BorderManager {
                 long minutes = remainingTicks / (20 * 60);
                 long seconds = (remainingTicks / 20) % 60;
                 title = String.format("§e다음 보급까지: %02d분 %02d초", minutes, seconds);
-                bar.setProgress((double) remainingTicks / (utilManager.getSupplyDropIntervalMinutes() * 20 * 60));
+                bar.setProgress((double) remainingTicks / utilManager.getSupplyDropTotalTicks());
             } else {
                 title = "§a보급품 대기 중...";
                 bar.setProgress(1.0);
