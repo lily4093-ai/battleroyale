@@ -31,11 +31,13 @@ public class UtilManager implements Listener {
     private List<String> supplyDropItemsConfig;
     private int supplyDropIntervalMinutes;
     private final Logger logger;
+    private final Random random; // Add this line
 
     public UtilManager(BattleRoyale plugin, FileConfiguration config) {
         this.plugin = plugin;
         this.config = config;
         this.logger = Logger.getLogger("BattleRoyale");
+        this.random = new Random(); // Initialize Random here
         this.disabledCrafting = Arrays.asList(
                 Material.ENCHANTED_GOLDEN_APPLE,
                 Material.END_CRYSTAL,
@@ -58,6 +60,7 @@ public class UtilManager implements Listener {
                 }
             }
         }.runTaskTimer(plugin, 20L * 60 * supplyDropIntervalMinutes, 20L * 60 * supplyDropIntervalMinutes); // Configurable interval
+    }
 
     public void setBorderManager(BorderManager borderManager) {
         this.borderManager = borderManager;
