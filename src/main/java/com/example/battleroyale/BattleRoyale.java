@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.logging.Logger;
 
 public final class BattleRoyale extends JavaPlugin implements Listener, TabExecutor {
 
@@ -41,6 +42,7 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabExecu
     private List<ItemStack> defaultItems = new ArrayList<>();
     private Random random = new Random();
     private Set<UUID> deadPlayers = new HashSet<>();
+    private final Logger logger = Logger.getLogger("BattleRoyale");
 
     @Override
     public void onEnable() {
@@ -52,7 +54,7 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabExecu
         // Initialize managers
         utilManager = new UtilManager(this, getConfig());
         borderManager = new BorderManager(this, utilManager, getConfig());
-        teamManager = new TeamManager(this, borderManager, getConfig());
+        teamManager = new TeamManager(this, borderManager, getConfig(), deadPlayers);
         gameManager = new GameManager(borderManager, teamManager, getConfig());
         utilManager.setBorderManager(borderManager); // Set BorderManager in UtilManager
 
@@ -207,11 +209,13 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabExecu
         Player killer = victim.getKiller();
 
         event.setDeathMessage(null); // 기본 킬로그 제거
+        logger.info("Player " + victim.getName() + " died.");
 
         victim.setGameMode(GameMode.SPECTATOR);
         deadPlayers.add(victim.getUniqueId());
 
         if (killer != null) {
+            logger.info("Killer is " + killer.getName());
             Location killerLoc = killer.getLocation();
             Location playerLoc = victim.getLocation();
             double distance = playerLoc.distance(killerLoc);
@@ -225,12 +229,15 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabExecu
             String killMessage = String.format("§6[배틀로얄] %s%s §f▶ %s%s (§e%.0fm§f)",
                     killerTeamStr, killer.getName(), victimTeamStr, victim.getName(), distance);
             Bukkit.broadcastMessage(killMessage);
+            logger.info("Broadcasted kill message: " + killMessage);
         }
 
-        Integer deadPlayerTeamNumber = teamManager.getPlayerTeams().get(victim);
+        Integer deadPlayerTeamNumber = teamManager.getPlayerTeamNumber(victim);
+        logger.info("Victim's team number: " + deadPlayerTeamNumber);
         if (deadPlayerTeamNumber != null) {
             if (teamManager.isTeamEliminated(deadPlayerTeamNumber)) {
                 Bukkit.broadcastMessage("§6[배틀로얄] §c" + deadPlayerTeamNumber + " 팀이 전멸했습니다!");
+                logger.info("Team " + deadPlayerTeamNumber + " eliminated. Checking game end.");
                 checkGameEnd();
             }
         }
@@ -250,12 +257,15 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabExecu
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
         borderManager.removePlayerFromBossBar(player);
+        logger.info("Player " + player.getName() + " quit.");
         if (GameManager.isIngame() && player.getGameMode() != GameMode.SPECTATOR) {
             deadPlayers.add(player.getUniqueId());
-            Integer teamNumber = teamManager.getPlayerTeams().get(player);
+            Integer teamNumber = teamManager.getPlayerTeamNumber(player);
+            logger.info("Player " + player.getName() + " (Team " + teamNumber + ") quit during game. Added to deadPlayers.");
             if (teamNumber != null) {
                 if (teamManager.isTeamEliminated(teamNumber)) {
                     Bukkit.broadcastMessage("§6[배틀로얄] §c" + teamNumber + " 팀이 전멸했습니다!");
+                    logger.info("Team " + teamNumber + " eliminated due to player quit. Checking game end.");
                     checkGameEnd();
                 }
             }
@@ -263,21 +273,25 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabExecu
     }
 
     private void checkGameEnd() {
+        logger.info("Checking game end conditions...");
         List<Integer> remainingTeams = new ArrayList<>();
         for (Player p : Bukkit.getOnlinePlayers()) {
             if (p.getGameMode() != GameMode.SPECTATOR) {
-                Integer teamNum = teamManager.getPlayerTeams().get(p);
+                Integer teamNum = teamManager.getPlayerTeamNumber(p);
                 if (teamNum != null && !remainingTeams.contains(teamNum)) {
                     remainingTeams.add(teamNum);
                 }
             }
         }
+        logger.info("Remaining active teams: " + remainingTeams.size());
 
         if (remainingTeams.size() == 1) {
             Bukkit.broadcastMessage("§6[배틀로얄] §a" + remainingTeams.get(0) + " 팀이 승리했습니다!");
+            logger.info("Team " + remainingTeams.get(0) + " won the game.");
             GameManager.setIngame(false);
         } else if (remainingTeams.isEmpty()) {
             Bukkit.broadcastMessage("§6[배틀로얄] §e모든 팀이 전멸했습니다. 무승부!");
+            logger.info("All teams eliminated. Game is a draw.");
             GameManager.setIngame(false);
         }
     }
