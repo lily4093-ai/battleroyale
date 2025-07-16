@@ -4,6 +4,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Chest;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -57,7 +58,7 @@ public class UtilManager implements Listener {
         new BukkitRunnable() {
             @Override
             public void run() {
-                if (GameManager.isIngame() && borderManager != null && borderManager.getCurrentPhase() >= 1) {
+                if (GameManager.isIngame()) { // Removed borderManager.getCurrentPhase() >= 1
                     supplyDropTimerTicks -= 20; // Decrement by 1 second (20 ticks)
                     if (supplyDropTimerTicks <= 0) {
                         spawnSupplyDrop();
@@ -128,7 +129,7 @@ public class UtilManager implements Listener {
         Bukkit.broadcastMessage("§6[배틀로얄] §f(" + (int) spawnLoc.getX() + ", " + (int) spawnLoc.getZ() + ") 에 보급이 소환되었습니다!");
     }
 
-    private ItemStack parseItemStack(String itemString) {
+    public ItemStack parseItemStack(String itemString) {
         try {
             String[] parts = itemString.split(":");
             Material material = Material.valueOf(parts[0].toUpperCase());
@@ -141,37 +142,46 @@ public class UtilManager implements Listener {
                     int max = Integer.parseInt(amountParts[1]);
                     amount = random.nextInt(max - min + 1) + min;
                 } else {
-                    amount = Integer.parseInt(amountParts[0]);
+                    amount = Integer.parseInt(parts[1]);
                 }
             } else {
                 amount = 1; // Default amount if not specified
             }
-            return new ItemStack(material, amount);
-        } catch (IllegalArgumentException e) {
+            ItemStack item = new ItemStack(material, amount);
+
+            // New enchantment parsing logic
+            // Format: MATERIAL:AMOUNT:ENCHANT_NAME1=LEVEL1,ENCHANT_NAME2=LEVEL2
+            if (parts.length > 2) {
+                String[] enchantments = parts[2].split(",");
+                for (String enchantmentString : enchantments) {
+                    String[] enchantmentParts = enchantmentString.split("="); // Use '=' as separator
+                    if (enchantmentParts.length == 2) {
+                        try {
+                            Enchantment enchantment = Enchantment.getByKey(org.bukkit.NamespacedKey.minecraft(enchantmentParts[0].toLowerCase()));
+                            int level = Integer.parseInt(enchantmentParts[1]);
+                            if (enchantment != null) {
+                                item.addUnsafeEnchantment(enchantment, level);
+                            } else {
+                                plugin.getLogger().warning("Invalid enchantment name in config: " + enchantmentParts[0]);
+                            }
+                        } catch (NumberFormatException e) {
+                            plugin.getLogger().warning("Invalid enchantment level in config: " + enchantmentParts[1]);
+                        } catch (IllegalArgumentException e) {
+                            plugin.getLogger().warning("Invalid enchantment key in config: " + enchantmentParts[0]);
+                        }
+                    } else {
+                        plugin.getLogger().warning("Invalid enchantment format in config: " + enchantmentString);
+                    }
+                }
+            }
+            return item;
+        } catch (Exception e) { // Catch broader exceptions to prevent server crashes from bad config
             plugin.getLogger().warning("Invalid item configuration in config.yml: " + itemString + " - " + e.getMessage());
             return null;
         }
     }
 
-    @EventHandler
-    public void onPlayerJoin(PlayerJoinEvent event) {
-        resetPlayerHealth(event.getPlayer());
-    }
-
-    @EventHandler
-    public void onPlayerRespawn(PlayerRespawnEvent event) {
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                resetPlayerHealth(event.getPlayer());
-            }
-        }.runTaskLater(plugin, 1L);
-    }
-
-    private void resetPlayerHealth(Player player) {
-        player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).setBaseValue(20.0);
-        player.setHealth(20.0);
-    }
+    
 
     @EventHandler
     public void onEntityDamage(EntityDamageEvent event) {
@@ -183,19 +193,7 @@ public class UtilManager implements Listener {
         }
     }
 
-    @EventHandler
-    public void onPlayerDeath(PlayerDeathEvent event) {
-        Player victim = event.getEntity();
-        Player killer = victim.getKiller();
-
-        if (killer != null) {
-            Random random = new Random();
-            victim.getWorld().dropItemNaturally(victim.getLocation(), new ItemStack(Material.GUNPOWDER, random.nextInt(3) + 1));
-            if (random.nextDouble() < 0.35) { // 35% chance
-                victim.getWorld().dropItemNaturally(victim.getLocation(), new ItemStack(Material.AMETHYST_SHARD, 1));
-            }
-        }
-    }
+    
 
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {
