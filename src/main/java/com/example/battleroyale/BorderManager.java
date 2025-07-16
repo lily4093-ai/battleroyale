@@ -33,6 +33,8 @@ public class BorderManager {
     private double borderCenterZ;
     private double nextBorderCenterX;
     private double nextBorderCenterZ;
+    private double compassTargetX;
+    private double compassTargetZ;
     private boolean isShrinking = false;
     private List<Double> borderSpeed;
     private final Map<UUID, BossBar> playerBossBars = new HashMap<>();
@@ -94,6 +96,8 @@ public class BorderManager {
         Location nextCenter = makeRandomcenter(currentSize, nextSize, borderCenterX, borderCenterZ);
         nextBorderCenterX = nextCenter.getX();
         nextBorderCenterZ = nextCenter.getZ();
+        compassTargetX = nextBorderCenterX;
+        compassTargetZ = nextBorderCenterZ;
 
         // Stop the waiting boss bar updater and start the first countdown
         stopCountdown(); // Ensure no other countdown is running
@@ -101,7 +105,7 @@ public class BorderManager {
         
         // 즉시 보스바 업데이트 (게임 시작 직후)
         updateBossBarForAllPlayers(currentSize);
-        utilManager.updateCompass(new Location(world, borderCenterX, 0, borderCenterZ)); // Update compass to initial center
+        utilManager.updateCompass(new Location(world, compassTargetX, 0, compassTargetZ)); // Update compass to next center
     }
 
     public void makeIngameborder(int phase, double newSize, double prevSize, double centerX, double centerZ) {
@@ -143,6 +147,9 @@ public class BorderManager {
                         Location randomCenter = makeRandomcenter(currentSize, nextSize, borderCenterX, borderCenterZ);
                         nextBorderCenterX = randomCenter.getX();
                         nextBorderCenterZ = randomCenter.getZ();
+                        compassTargetX = nextBorderCenterX;
+                        compassTargetZ = nextBorderCenterZ;
+                        utilManager.updateCompass(new Location(world, compassTargetX, 0, compassTargetZ)); // Update compass to next center
                     }
                     
                     // 자기장 축소 완료 후 다음 축소까지 대기 시간 설정
@@ -192,7 +199,9 @@ public class BorderManager {
                 border.setCenter(currentX, currentZ);
                 borderCenterX = currentX;
                 borderCenterZ = currentZ;
-                utilManager.updateCompass(new Location(world, borderCenterX, 0, borderCenterZ)); // Update compass during shrink
+                compassTargetX = xLoc2;
+                compassTargetZ = zLoc2;
+                utilManager.updateCompass(new Location(world, compassTargetX, 0, compassTargetZ)); // Update compass to final destination during shrink
             }
         }.runTaskTimer(BattleRoyale.getPlugin(BattleRoyale.class), 1L, 1L);
     }
@@ -303,16 +312,25 @@ public class BorderManager {
         String title;
         BarColor color = BarColor.BLUE;
         BarStyle style = BarStyle.SOLID;
+        double progress = 1.0;
+        boolean showBar = true;
 
-        if (player.getInventory().getItemInMainHand().getType() == Material.COMPASS) {
+        // Get actual border size and center
+        double actualBorderSize = border.getSize();
+        double actualBorderCenterX = border.getCenter().getX();
+        double actualBorderCenterZ = border.getCenter().getZ();
+
+        Material heldItem = player.getInventory().getItemInMainHand().getType();
+
+        if (heldItem == Material.COMPASS) {
             // Compass: Show border info
             double playerX = player.getLocation().getX();
             double playerZ = player.getLocation().getZ();
-            double dx = Math.abs(playerX - borderCenterX);
-            double dz = Math.abs(playerZ - borderCenterZ);
-            double distance = Math.max(dx, dz);
-            double halfSize = borderSize / 2;
-            double progress = (distance <= halfSize) ? 1.0 - (distance / halfSize) : 0.0;
+            double dx = Math.abs(playerX - actualBorderCenterX);
+            double dz = Math.abs(playerZ - actualBorderCenterZ);
+            double distance = Math.sqrt(dx * dx + dz * dz); // Use Euclidean distance for accuracy
+            double halfSize = actualBorderSize / 2;
+            progress = (distance <= halfSize) ? 1.0 - (distance / halfSize) : 0.0;
 
             if (progress > 0.7) color = BarColor.GREEN;
             else if (progress > 0.4) color = BarColor.YELLOW;
@@ -320,32 +338,34 @@ public class BorderManager {
             else color = BarColor.PURPLE;
 
             title = (distance <= halfSize)
-                    ? String.format("자기장 중심까지: %.0fm (크기: %.0fm)", distance, borderSize)
-                    : String.format("§c자기장 밖! 중심까지: %.0fm (크기: %.0fm)", distance, borderSize);
-            bar.setProgress(Math.max(0.0, Math.min(1.0, progress)));
-        } else if (player.getInventory().getItemInMainHand().getType() == Material.CLOCK) {
+                    ? String.format("자기장 중심까지: %.0fm (크기: %.0fm)", distance, actualBorderSize)
+                    : String.format("§c자기장 밖! 중심까지: %.0fm (크기: %.0fm)", distance, actualBorderSize);
+
+        } else if (heldItem == Material.CLOCK) {
             // Clock: Show supply drop countdown
             long remainingTicks = utilManager.getSupplyDropRemainingTicks();
             if (remainingTicks > 0) {
                 long minutes = remainingTicks / (20 * 60);
                 long seconds = (remainingTicks / 20) % 60;
                 title = String.format("§e다음 보급까지: %02d분 %02d초", minutes, seconds);
-                bar.setProgress((double) remainingTicks / utilManager.getSupplyDropTotalTicks());
+                progress = (double) remainingTicks / utilManager.getSupplyDropTotalTicks();
             } else {
                 title = "§a보급품 대기 중...";
-                bar.setProgress(1.0);
+                progress = 1.0;
             }
             color = BarColor.YELLOW;
         } else {
-            // Default: No specific item held, hide boss bar or show generic message
-            bar.setVisible(false);
-            return;
+            // Default: Show basic border info
+            title = String.format("§7자기장 크기: §e%.0fm §7| §7다음 중심: §e(%.0f, %.0f)", actualBorderSize, compassTargetX, compassTargetZ);
+            color = BarColor.BLUE;
+            progress = actualBorderSize / borderSizes.get(0); // Show progress relative to initial size
         }
 
-        bar.setVisible(true);
+        bar.setVisible(showBar);
         bar.setColor(color);
         bar.setTitle(title);
         bar.setStyle(style);
+        bar.setProgress(Math.max(0.0, Math.min(1.0, progress)));
     }
 
     // 보스바 업데이트 태스크 시작 (게임 중 항상 실행)
@@ -366,7 +386,7 @@ public class BorderManager {
                 }
             }
         };
-        bossBarUpdateTask.runTaskTimer(plugin, 0L, 20L);
+        bossBarUpdateTask.runTaskTimer(plugin, 0L, 5L);
     }
 
     // 보스바 업데이트 태스크 중지
@@ -409,6 +429,8 @@ public class BorderManager {
     public int getCountdownSeconds() { return countdownSeconds; }
     public boolean isCountdownActive() { return isCountdownActive; }
     public int getCurrentPhase() { return currentPhase; }
+    public double getCompassTargetX() { return compassTargetX; }
+    public double getCompassTargetZ() { return compassTargetZ; }
 
     private void endGame() {
         Bukkit.broadcastMessage("§6[배틀로얄] §a게임이 종료되었습니다! 모든 플레이어를 자기장 중심으로 이동시킵니다.");
