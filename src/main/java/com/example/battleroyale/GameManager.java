@@ -9,6 +9,8 @@ import org.bukkit.configuration.file.FileConfiguration;
 import java.util.logging.Logger;
 import org.bukkit.World;
 import org.bukkit.Location;
+import org.bukkit.inventory.ItemStack;
+import java.util.List;
 
 public class GameManager {
 
@@ -21,7 +23,10 @@ public class GameManager {
     private final Logger logger;
     private World world;
 
-    public GameManager(BorderManager borderManager, TeamManager teamManager, UtilManager utilManager, FileConfiguration config) {
+    private BattleRoyale plugin; // Add plugin field
+
+    public GameManager(BattleRoyale plugin, BorderManager borderManager, TeamManager teamManager, UtilManager utilManager, FileConfiguration config) {
+        this.plugin = plugin;
         this.borderManager = borderManager;
         this.teamManager = teamManager;
         this.utilManager = utilManager;
@@ -31,22 +36,35 @@ public class GameManager {
     }
 
     public void brGameinit(String mode, int teamSize) {
-        int minPlayersPerTeam = config.getInt("game.min_players_per_team", 2);
-        int requiredPlayers = teamSize * minPlayersPerTeam;
-        if (Bukkit.getOnlinePlayers().size() < requiredPlayers) {
-            logger.warning("Not enough players to start the game with " + teamSize + " teams. Required: " + requiredPlayers + ", Online: " + Bukkit.getOnlinePlayers().size());
-            Bukkit.broadcastMessage("§c[배틀로얄] 게임 시작 실패: 팀당 최소 " + minPlayersPerTeam + "명 필요. 현재 플레이어 수: " + Bukkit.getOnlinePlayers().size() + ", 필요한 플레이어 수: " + requiredPlayers);
+        long nonSpectatorCount = Bukkit.getOnlinePlayers().stream().filter(p -> p.getGameMode() != GameMode.SPECTATOR).count();
+        if (nonSpectatorCount < teamSize) {
+            String message = "§c[배틀로얄] 게임 시작 실패: " + teamSize + "개의 팀을 만들기에 플레이어가 부족합니다. (필요: " + teamSize + "명, 현재: " + nonSpectatorCount + "명)";
+            Bukkit.broadcastMessage(message);
+            logger.warning(message);
             return;
         }
 
+        String startMessage = String.format("§6[배틀로얄] §f%s 배틀로얄 게임을 시작합니다. (팀 수: §c%d§f)", 
+            mode.equalsIgnoreCase("default") ? "기본" : "팀", teamSize);
+        Bukkit.broadcastMessage(startMessage);
+
         setIngame(true);
         borderManager.brBorderinit();
-        utilManager.updateCompass(new Location(world, borderManager.getBorderCenterX(), 0, borderManager.getBorderCenterZ())); // Update compass to border center
+        utilManager.updateCompass(new Location(world, borderManager.getBorderCenterX(), 0, borderManager.getBorderCenterZ()));
 
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (player.getGameMode() != GameMode.SPECTATOR) {
-                player.addPotionEffect(new PotionEffect(PotionEffectType.NIGHT_VISION, -1, 0)); // Infinite Night Vision
-                player.addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 6000, 4)); // Resistance 5 for 5 minutes (6000 ticks)
+                player.getInventory().clear();
+                player.addPotionEffect(new PotionEffect(PotionEffectType.NIGHT_VISION, Integer.MAX_VALUE, 0, false, false));
+                player.addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 6000, 4)); // Resistance 5 for 5 minutes
+                player.setHealth(player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).getValue());
+                player.setFoodLevel(20);
+                player.setSaturation(20);
+
+                // Give default items from the loaded list in the main plugin class
+                for (ItemStack item : plugin.getDefaultItems()) {
+                    player.getInventory().addItem(item.clone());
+                }
             }
         }
 
