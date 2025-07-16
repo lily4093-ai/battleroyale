@@ -19,6 +19,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class TeamManager implements org.bukkit.command.CommandExecutor {
 
@@ -54,7 +55,9 @@ public class TeamManager implements org.bukkit.command.CommandExecutor {
             }
             playerTeams.clear();
 
-            List<Player> players = new ArrayList<>(Bukkit.getOnlinePlayers());
+            List<Player> players = Bukkit.getOnlinePlayers().stream()
+                    .filter(p -> p.getGameMode() != GameMode.SPECTATOR)
+                    .collect(Collectors.toList());
             Collections.shuffle(players);
 
             for (int i = 0; i < size; i++) {
@@ -166,14 +169,28 @@ public class TeamManager implements org.bukkit.command.CommandExecutor {
     }
 
     public boolean isTeamEliminated(int teamNumber) {
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            if (playerTeams.containsKey(player) && playerTeams.get(player) == teamNumber) {
-                if (player.getGameMode() != GameMode.SPECTATOR && !deadPlayers.contains(player.getUniqueId())) {
-                    return false; // Found a living player, so team is not eliminated.
-                }
+        List<Player> teamMembers = new ArrayList<>();
+        for (Map.Entry<Player, Integer> entry : playerTeams.entrySet()) {
+            if (entry.getValue() == teamNumber) {
+                teamMembers.add(entry.getKey());
             }
         }
-        return true; // No living players found in the team, so team is eliminated.
+
+        if (teamMembers.isEmpty()) {
+            // 팀에 아무도 없으면 (예: 모든 멤버가 오프라인) 전멸로 간주
+            return true;
+        }
+
+        for (Player player : teamMembers) {
+            // 온라인 상태이고, 관전 모드가 아니며, deadPlayers 목록에 없는 플레이어가 한 명이라도 있으면
+            // 해당 팀은 아직 살아있는 것입니다.
+            if (player.isOnline() && player.getGameMode() != GameMode.SPECTATOR && !deadPlayers.contains(player.getUniqueId())) {
+                return false; 
+            }
+        }
+
+        // 위의 조건을 만족하는 살아있는 플레이어가 없으면 팀은 전멸한 것입니다.
+        return true; 
     }
 
     public Integer getPlayerTeamNumber(Player player) {
