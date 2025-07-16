@@ -22,6 +22,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.command.TabExecutor;
+import org.bukkit.event.player.PlayerRespawnEvent;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -51,12 +52,18 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabExecu
         
         getLogger().info("BattleRoyale Plugin Enabled!");
 
+        // Register events
+        getServer().getPluginManager().registerEvents(this, this);
+
         // Initialize managers
         utilManager = new UtilManager(this, getConfig());
         borderManager = new BorderManager(this, utilManager, getConfig());
         teamManager = new TeamManager(this, borderManager, getConfig(), deadPlayers);
-        gameManager = new GameManager(borderManager, teamManager, utilManager, getConfig());
+        gameManager = new GameManager(this, borderManager, teamManager, utilManager, getConfig());
         utilManager.setBorderManager(borderManager); // Set BorderManager in UtilManager
+
+        // Load default items from config
+        loadDefaultItems();
 
         // Register commands
         getCommand("brteam").setExecutor(teamManager);
@@ -74,6 +81,18 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabExecu
         getCommand("강제종료").setExecutor(this);
         getCommand("top").setExecutor(this);
         getCommand("탑").setExecutor(this);
+    }
+
+    public void loadDefaultItems() {
+        defaultItems.clear();
+        List<String> itemStrings = getConfig().getStringList("default_items");
+        for (String itemString : itemStrings) {
+            ItemStack item = utilManager.parseItemStack(itemString);
+            if (item != null) {
+                defaultItems.add(item);
+            }
+        }
+        getLogger().info("Loaded " + defaultItems.size() + " default items from config.");
     }
 
     @Override
@@ -100,12 +119,10 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabExecu
                 try {
                     int size = Integer.parseInt(args[1]);
                     if (args[0].equalsIgnoreCase("startdefault")) {
-                        player.sendMessage("§6[배틀로얄] §f기본 배틀로얄 게임을 시작합니다. 자기장 크기: §c" + size);
                         deadPlayers.clear();
                         gameManager.brGameinit("default", size);
                         return true;
                     } else if (args[0].equalsIgnoreCase("startim")) {
-                        player.sendMessage("§6[배틀로얄] §f팀 배틀로얄 게임을 시작합니다. 자기장 크기: §c" + size);
                         deadPlayers.clear();
                         gameManager.brGameinit("im", size);
                         return true;
@@ -205,18 +222,17 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabExecu
 
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
+        if (!GameManager.isIngame()) {
+            return;
+        }
+
         Player victim = event.getEntity();
         Player killer = victim.getKiller();
 
-        event.setDeathMessage(null); // 기본 킬로그 제거
+        event.setDeathMessage(null);
         logger.info("Player " + victim.getName() + " died.");
 
-        victim.setGameMode(GameMode.SPECTATOR);
         deadPlayers.add(victim.getUniqueId());
-
-        // Teleport victim to their death location or a safe spectator spot
-        // This helps ensure they are in a valid spectator view immediately
-        victim.teleport(victim.getLocation().add(0, 2, 0)); // Teleport slightly up to avoid being stuck in blocks
 
         String killMessage;
         if (killer != null) {
@@ -241,14 +257,35 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabExecu
             logger.info("Broadcasted death message: " + killMessage);
         }
 
-        Integer deadPlayerTeamNumber = teamManager.getPlayerTeamNumber(victim);
-        logger.info("Victim's team number: " + deadPlayerTeamNumber);
-        if (deadPlayerTeamNumber != null) {
-            if (teamManager.isTeamEliminated(deadPlayerTeamNumber)) {
-                Bukkit.broadcastMessage("§6[배틀로얄] §c" + deadPlayerTeamNumber + " 팀이 전멸했습니다!");
-                logger.info("Team " + deadPlayerTeamNumber + " eliminated. Checking game end.");
-                checkGameEnd();
+        Bukkit.getScheduler().runTaskLater(this, () -> {
+            Integer deadPlayerTeamNumber = teamManager.getPlayerTeamNumber(victim);
+            logger.info("Victim's team number: " + deadPlayerTeamNumber);
+            if (deadPlayerTeamNumber != null) {
+                if (teamManager.isTeamEliminated(deadPlayerTeamNumber)) {
+                    Bukkit.broadcastMessage("§6[배틀로얄] §c" + deadPlayerTeamNumber + " 팀이 전멸했습니다!");
+                    logger.info("Team " + deadPlayerTeamNumber + " eliminated. Checking game end.");
+                    checkGameEnd();
+                }
             }
+        }, 5L);
+        
+        Bukkit.getScheduler().runTaskLater(this, () -> {
+            if (victim.isDead()) {
+                victim.spigot().respawn();
+            }
+        }, 1L);
+    }
+
+    @EventHandler
+    public void onPlayerRespawn(PlayerRespawnEvent event) {
+        Player player = event.getPlayer();
+        if (GameManager.isIngame() && deadPlayers.contains(player.getUniqueId())) {
+            Bukkit.getScheduler().runTaskLater(this, () -> {
+                player.setGameMode(GameMode.SPECTATOR);
+                player.setSpectatorTarget(null);
+                player.setFlySpeed(0.4f);
+                player.sendMessage("§c당신은 사망했습니다. 이제부터 관전 모드입니다.");
+            }, 1L);
         }
     }
 
@@ -256,6 +293,10 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabExecu
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         borderManager.addPlayerToBossBar(player);
+        player.setHealth(player.getMaxHealth());
+        player.setFoodLevel(20);
+        player.setSaturation(20);
+
         if (GameManager.isIngame() && deadPlayers.contains(player.getUniqueId())) {
             player.setGameMode(GameMode.SPECTATOR);
             player.sendMessage("§6[배틀로얄] §f당신은 이전에 사망하여 관전 모드로 접속했습니다.");
@@ -285,10 +326,8 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabExecu
         logger.info("Checking game end conditions...");
         List<Integer> remainingTeams = new ArrayList<>();
         for (Player p : Bukkit.getOnlinePlayers()) {
-            // Only consider players who are not in spectator mode and are part of a team
             if (p.getGameMode() != GameMode.SPECTATOR && teamManager.getPlayerTeamNumber(p) != null) {
                 Integer teamNum = teamManager.getPlayerTeamNumber(p);
-                // Check if the player's team is not eliminated and add it to remainingTeams if not already present
                 if (!teamManager.isTeamEliminated(teamNum) && !remainingTeams.contains(teamNum)) {
                     remainingTeams.add(teamNum);
                 }
@@ -300,12 +339,10 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabExecu
             Bukkit.broadcastMessage("§6[배틀로얄] §a" + remainingTeams.get(0) + " 팀이 승리했습니다!");
             logger.info("Team " + remainingTeams.get(0) + " won the game.");
             GameManager.setIngame(false);
-            // Optionally, reset game state or teleport players to lobby
         } else if (remainingTeams.isEmpty()) {
             Bukkit.broadcastMessage("§6[배틀로얄] §e모든 팀이 전멸했습니다. 무승부!");
             logger.info("All teams eliminated. Game is a draw.");
             GameManager.setIngame(false);
-            // Optionally, reset game state or teleport players to lobby
         }
     }
 
