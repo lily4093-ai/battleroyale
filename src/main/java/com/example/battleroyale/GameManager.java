@@ -7,6 +7,8 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.configuration.file.FileConfiguration;
 import java.util.logging.Logger;
+import org.bukkit.World;
+import org.bukkit.Location;
 
 public class GameManager {
 
@@ -14,14 +16,18 @@ public class GameManager {
     
     private BorderManager borderManager;
     private TeamManager teamManager;
+    private UtilManager utilManager;
     private FileConfiguration config;
     private final Logger logger;
+    private World world;
 
-    public GameManager(BorderManager borderManager, TeamManager teamManager, FileConfiguration config) {
+    public GameManager(BorderManager borderManager, TeamManager teamManager, UtilManager utilManager, FileConfiguration config) {
         this.borderManager = borderManager;
         this.teamManager = teamManager;
+        this.utilManager = utilManager;
         this.config = config;
         this.logger = Logger.getLogger("BattleRoyale");
+        this.world = Bukkit.getWorlds().get(0); // Initialize world
     }
 
     public void brGameinit(String mode, int teamSize) {
@@ -35,6 +41,7 @@ public class GameManager {
 
         setIngame(true);
         borderManager.brBorderinit();
+        utilManager.updateCompass(new Location(world, borderManager.getBorderCenterX(), 0, borderManager.getBorderCenterZ())); // Update compass to border center
 
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (player.getGameMode() != GameMode.SPECTATOR) {
@@ -58,16 +65,4 @@ public class GameManager {
     public static boolean isIngame() {
         return isIngame;
     }
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
 }
