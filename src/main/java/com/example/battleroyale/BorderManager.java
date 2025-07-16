@@ -328,7 +328,7 @@ public class BorderManager {
             double playerZ = player.getLocation().getZ();
             double dx = Math.abs(playerX - actualBorderCenterX);
             double dz = Math.abs(playerZ - actualBorderCenterZ);
-            double distance = Math.sqrt(dx * dx + dz * dz); // Use Euclidean distance for accuracy
+            double distance = Math.max(dx, dz); // Use Chebyshev distance for square border
             double halfSize = actualBorderSize / 2;
             progress = (distance <= halfSize) ? 1.0 - (distance / halfSize) : 0.0;
 
