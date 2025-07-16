@@ -21,3 +21,10 @@ supply_drop:
 # Game Settings
 game:
   min_players_per_team: 2 # Minimum players required per team for a warning
+
+default_items:
+  - 'DIAMOND_PICKAXE:1:EFFICIENCY=3,UNBREAKING=3'
+  - 'DIAMOND_AXE:1:EFFICIENCY=3,UNBREAKING=3'
+  - 'BREAD:64'
+  - 'ENCHANTING_TABLE:1'
+  - 'BOOKSHELF:64'
