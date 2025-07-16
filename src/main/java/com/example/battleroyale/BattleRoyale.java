@@ -55,7 +55,7 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabExecu
         utilManager = new UtilManager(this, getConfig());
         borderManager = new BorderManager(this, utilManager, getConfig());
         teamManager = new TeamManager(this, borderManager, getConfig(), deadPlayers);
-        gameManager = new GameManager(borderManager, teamManager, getConfig());
+        gameManager = new GameManager(borderManager, teamManager, utilManager, getConfig());
         utilManager.setBorderManager(borderManager); // Set BorderManager in UtilManager
 
         // Register commands
@@ -214,6 +214,11 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabExecu
         victim.setGameMode(GameMode.SPECTATOR);
         deadPlayers.add(victim.getUniqueId());
 
+        // Teleport victim to their death location or a safe spectator spot
+        // This helps ensure they are in a valid spectator view immediately
+        victim.teleport(victim.getLocation().add(0, 2, 0)); // Teleport slightly up to avoid being stuck in blocks
+
+        String killMessage;
         if (killer != null) {
             logger.info("Killer is " + killer.getName());
             Location killerLoc = killer.getLocation();
@@ -223,13 +228,17 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabExecu
             Integer killerTeam = teamManager.getPlayerTeamNumber(killer);
             Integer victimTeam = teamManager.getPlayerTeamNumber(victim);
 
-            String killerTeamStr = (killerTeam != null) ? "[TEAM " + killerTeam + "] " : "";
-            String victimTeamStr = (victimTeam != null) ? "[TEAM " + victimTeam + "] " : "";
+            String killerTeamStr = (killerTeam != null) ? "§b[TEAM " + killerTeam + "] §f" : "";
+            String victimTeamStr = (victimTeam != null) ? "§c[TEAM " + victimTeam + "] §f" : "";
 
-            String killMessage = String.format("§6[배틀로얄] %s%s §f▶ %s%s (§e%.0fm§f)",
+            killMessage = String.format("§6[배틀로얄] %s%s §f▶ %s%s (§e%.0fm§f)",
                     killerTeamStr, killer.getName(), victimTeamStr, victim.getName(), distance);
             Bukkit.broadcastMessage(killMessage);
             logger.info("Broadcasted kill message: " + killMessage);
+        } else {
+            killMessage = String.format("§6[배틀로얄] §c%s §f님이 사망했습니다.", victim.getName());
+            Bukkit.broadcastMessage(killMessage);
+            logger.info("Broadcasted death message: " + killMessage);
         }
 
         Integer deadPlayerTeamNumber = teamManager.getPlayerTeamNumber(victim);
@@ -276,9 +285,11 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabExecu
         logger.info("Checking game end conditions...");
         List<Integer> remainingTeams = new ArrayList<>();
         for (Player p : Bukkit.getOnlinePlayers()) {
-            if (p.getGameMode() != GameMode.SPECTATOR) {
+            // Only consider players who are not in spectator mode and are part of a team
+            if (p.getGameMode() != GameMode.SPECTATOR && teamManager.getPlayerTeamNumber(p) != null) {
                 Integer teamNum = teamManager.getPlayerTeamNumber(p);
-                if (teamNum != null && !remainingTeams.contains(teamNum)) {
+                // Check if the player's team is not eliminated and add it to remainingTeams if not already present
+                if (!teamManager.isTeamEliminated(teamNum) && !remainingTeams.contains(teamNum)) {
                     remainingTeams.add(teamNum);
                 }
             }
@@ -289,10 +300,12 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabExecu
             Bukkit.broadcastMessage("§6[배틀로얄] §a" + remainingTeams.get(0) + " 팀이 승리했습니다!");
             logger.info("Team " + remainingTeams.get(0) + " won the game.");
             GameManager.setIngame(false);
+            // Optionally, reset game state or teleport players to lobby
         } else if (remainingTeams.isEmpty()) {
             Bukkit.broadcastMessage("§6[배틀로얄] §e모든 팀이 전멸했습니다. 무승부!");
             logger.info("All teams eliminated. Game is a draw.");
             GameManager.setIngame(false);
+            // Optionally, reset game state or teleport players to lobby
         }
     }
 
