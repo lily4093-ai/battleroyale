@@ -191,7 +191,15 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabExecu
             }
         } else if (command.getName().equalsIgnoreCase("brteam")) {
             if (args.length == 1) {
-                return Arrays.asList("create", "add", "remove", "list");
+                return Arrays.asList("create", "add", "remove", "delete", "list");
+            } else if (args.length == 2) {
+                if (args[0].equalsIgnoreCase("add") || args[0].equalsIgnoreCase("remove") || args[0].equalsIgnoreCase("delete")) {
+                    return new ArrayList<>(teamManager.getCustomTeams().keySet());
+                }
+            } else if (args.length == 3) {
+                if (args[0].equalsIgnoreCase("add") || args[0].equalsIgnoreCase("remove")) {
+                    return Bukkit.getOnlinePlayers().stream().map(Player::getName).collect(Collectors.toList());
+                }
             }
         }
         return Collections.emptyList();
