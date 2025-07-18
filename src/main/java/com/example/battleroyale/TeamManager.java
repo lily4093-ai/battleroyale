@@ -168,6 +168,10 @@ public class TeamManager implements org.bukkit.command.CommandExecutor {
         return playerTeams;
     }
 
+    public Map<String, List<Player>> getCustomTeams() {
+        return customTeams;
+    }
+
     public boolean isTeamEliminated(int teamNumber) {
         List<Player> teamMembers = new ArrayList<>();
         for (Map.Entry<Player, Integer> entry : playerTeams.entrySet()) {
@@ -261,6 +265,23 @@ public class TeamManager implements org.bukkit.command.CommandExecutor {
                             player.sendMessage("§6[배틀로얄] §c플레이어를 찾을 수 없습니다.");
                             return true;
                         }
+                    } else {
+                        player.sendMessage("§6[배틀로얄] §f사용법: /brteam remove <팀이름> <플레이어이름>");
+                        return true;
+                    }
+                } else if (args[0].equalsIgnoreCase("delete")) {
+                    if (args.length > 1) {
+                        String teamName = args[1];
+                        if (customTeams.containsKey(teamName)) {
+                            deleteTeam(teamName);
+                            player.sendMessage("§6[배틀로얄] §f" + teamName + " 팀을 삭제했습니다.");
+                        } else {
+                            player.sendMessage("§6[배틀로얄] §c" + teamName + " 팀을 찾을 수 없습니다.");
+                        }
+                        return true;
+                    } else {
+                        player.sendMessage("§6[배틀로얄] §f사용법: /brteam delete <팀이름>");
+                        return true;
                     }
                 } else if (args[0].equalsIgnoreCase("list")) {
                     listTeams(player);
