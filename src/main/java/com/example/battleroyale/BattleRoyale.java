@@ -31,7 +31,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
-import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.logging.Logger;
 
 public final class BattleRoyale extends JavaPlugin implements Listener, TabExecutor {
