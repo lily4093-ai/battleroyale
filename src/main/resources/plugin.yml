@@ -5,7 +5,7 @@ api-version: '1.20'
 commands:
   brteam:
     description: Manages teams for Battle Royale.
-    usage: /brteam [create|add|remove|list]
+    usage: /brteam [create|add|remove|delete|list]
   br:
     description: BattleRoyale command.
     usage: /br [startdefault|startim] [size]
