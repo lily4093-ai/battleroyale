@@ -223,6 +223,21 @@ public class TeamManager implements org.bukkit.command.CommandExecutor {
         }
     }
 
+    public void deleteTeam(String teamName) {
+        if (customTeams.containsKey(teamName)) {
+            // Remove players from the scoreboard team
+            Team scoreboardTeam = scoreboard.getTeam(teamName);
+            if (scoreboardTeam != null) {
+                for (Player p : customTeams.get(teamName)) {
+                    scoreboardTeam.removeEntry(p.getName());
+                    playerTeams.remove(p); // Also remove from playerTeams map
+                }
+                scoreboardTeam.unregister(); // Unregister the scoreboard team
+            }
+            customTeams.remove(teamName); // Remove from customTeams map
+        }
+    }
+
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player)) {
