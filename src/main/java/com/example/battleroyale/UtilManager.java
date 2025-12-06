@@ -33,7 +33,10 @@ public class UtilManager implements Listener {
     private int supplyDropIntervalMinutes;
     private final Logger logger;
     private final Random random;
-    private long supplyDropTimerTicks; // Add this field
+    private long supplyDropTimerTicks;
+    private double nextSupplyDropX = 0;
+    private double nextSupplyDropZ = 0;
+    private boolean nextSupplyDropCalculated = false;
 
     public UtilManager(BattleRoyale plugin, FileConfiguration config) {
         this.plugin = plugin;
@@ -91,17 +94,55 @@ public class UtilManager implements Listener {
         }
     }
 
-    public void spawnSupplyDrop() {
+    private void calculateNextSupplyDropLocation() {
         if (borderManager == null || borderManager.getBorder() == null) return;
 
-        Random random = new Random();
         double currentBorderRadius = borderManager.getCurrentSize() / 2;
         double centerX = borderManager.getBorderCenterX();
         double centerZ = borderManager.getBorderCenterZ();
 
-        // Calculate random spawn location within the current border
-        double spawnX = centerX + (random.nextDouble() * 2 - 1) * (currentBorderRadius * 0.8); // 80% of border to prevent edge spawns
-        double spawnZ = centerZ + (random.nextDouble() * 2 - 1) * (currentBorderRadius * 0.8);
+        nextSupplyDropX = centerX + (random.nextDouble() * 2 - 1) * (currentBorderRadius * 0.8);
+        nextSupplyDropZ = centerZ + (random.nextDouble() * 2 - 1) * (currentBorderRadius * 0.8);
+        nextSupplyDropCalculated = true;
+    }
+
+    public double getDistanceToNextSupplyDrop(Player player) {
+        if (!nextSupplyDropCalculated) return -1;
+
+        double dx = player.getLocation().getX() - nextSupplyDropX;
+        double dz = player.getLocation().getZ() - nextSupplyDropZ;
+        return Math.sqrt(dx * dx + dz * dz);
+    }
+
+    public String getSupplyDropDistanceRange(Player player) {
+        double distance = getDistanceToNextSupplyDrop(player);
+
+        if (distance < 0) return "계산 중...";
+        if (distance <= 250) return "250블럭 안";
+        if (distance <= 500) return "500블럭 안";
+        if (distance <= 1000) return "1000블럭 안";
+        return "1000블럭 밖";
+    }
+
+    public void initializeFirstSupplyDrop() {
+        calculateNextSupplyDropLocation();
+    }
+
+    public void spawnSupplyDrop() {
+        if (borderManager == null || borderManager.getBorder() == null) return;
+
+        // Use pre-calculated location if available, otherwise calculate now
+        double spawnX, spawnZ;
+        if (nextSupplyDropCalculated) {
+            spawnX = nextSupplyDropX;
+            spawnZ = nextSupplyDropZ;
+        } else {
+            double currentBorderRadius = borderManager.getCurrentSize() / 2;
+            double centerX = borderManager.getBorderCenterX();
+            double centerZ = borderManager.getBorderCenterZ();
+            spawnX = centerX + (random.nextDouble() * 2 - 1) * (currentBorderRadius * 0.8);
+            spawnZ = centerZ + (random.nextDouble() * 2 - 1) * (currentBorderRadius * 0.8);
+        }
 
         Location spawnLoc = new Location(borderManager.getBorder().getWorld(), spawnX, 256, spawnZ);
         // Find the highest non-air block
@@ -117,7 +158,7 @@ public class UtilManager implements Listener {
 
         spawnLoc.getBlock().setType(Material.CHEST);
         Chest chest = (Chest) spawnLoc.getBlock().getState();
-        
+
         // 보급품 아이템 설정
         for (String itemString : supplyDropItemsConfig) {
             ItemStack item = parseItemStack(itemString);
@@ -127,6 +168,9 @@ public class UtilManager implements Listener {
         }
 
         Bukkit.broadcastMessage("§6[배틀로얄] §f(" + (int) spawnLoc.getX() + ", " + (int) spawnLoc.getZ() + ") 에 보급이 소환되었습니다!");
+
+        // Calculate next supply drop location
+        calculateNextSupplyDropLocation();
     }
 
     public ItemStack parseItemStack(String itemString) {

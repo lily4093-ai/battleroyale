@@ -51,13 +51,18 @@ public class GameManager {
         setIngame(true);
         borderManager.brBorderinit();
         utilManager.updateCompass(new Location(world, borderManager.getBorderCenterX(), 0, borderManager.getBorderCenterZ()));
+        utilManager.initializeFirstSupplyDrop();
+
+        double maxHealth = config.getDouble("game.max_health", 40.0);
 
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (player.getGameMode() != GameMode.SPECTATOR) {
                 player.getInventory().clear();
                 player.addPotionEffect(new PotionEffect(PotionEffectType.NIGHT_VISION, Integer.MAX_VALUE, 0, false, false));
-                player.addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 6000, 4)); // Resistance 5 for 5 minutes
-                player.setHealth(player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).getValue());
+                player.addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 6000, 4)); // Resistance 5 for 5 minutes (initial invincibility)
+
+                player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).setBaseValue(maxHealth);
+                player.setHealth(maxHealth);
                 player.setFoodLevel(20);
                 player.setSaturation(20);
 

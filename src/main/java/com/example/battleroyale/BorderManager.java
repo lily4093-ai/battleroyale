@@ -96,16 +96,16 @@ public class BorderManager {
         Location nextCenter = makeRandomcenter(currentSize, nextSize, borderCenterX, borderCenterZ);
         nextBorderCenterX = nextCenter.getX();
         nextBorderCenterZ = nextCenter.getZ();
-        compassTargetX = nextBorderCenterX;
-        compassTargetZ = nextBorderCenterZ;
+        compassTargetX = borderCenterX;
+        compassTargetZ = borderCenterZ;
 
         // Stop the waiting boss bar updater and start the first countdown
         stopCountdown(); // Ensure no other countdown is running
         startCountdown(countdownTimes.get(currentPhase)); // Start countdown to the first shrink
-        
+
         // 즉시 보스바 업데이트 (게임 시작 직후)
         updateBossBarForAllPlayers(currentSize);
-        utilManager.updateCompass(new Location(world, compassTargetX, 0, compassTargetZ)); // Update compass to next center
+        utilManager.updateCompass(new Location(world, compassTargetX, 0, compassTargetZ)); // Update compass to current center
     }
 
     public void makeIngameborder(int phase, double newSize, double prevSize, double centerX, double centerZ) {
@@ -147,9 +147,9 @@ public class BorderManager {
                         Location randomCenter = makeRandomcenter(currentSize, nextSize, borderCenterX, borderCenterZ);
                         nextBorderCenterX = randomCenter.getX();
                         nextBorderCenterZ = randomCenter.getZ();
-                        compassTargetX = nextBorderCenterX;
-                        compassTargetZ = nextBorderCenterZ;
-                        utilManager.updateCompass(new Location(world, compassTargetX, 0, compassTargetZ)); // Update compass to next center
+                        compassTargetX = borderCenterX;
+                        compassTargetZ = borderCenterZ;
+                        utilManager.updateCompass(new Location(world, compassTargetX, 0, compassTargetZ)); // Update compass to current center
                     }
                     
                     // 자기장 축소 완료 후 다음 축소까지 대기 시간 설정
@@ -199,9 +199,9 @@ public class BorderManager {
                 border.setCenter(currentX, currentZ);
                 borderCenterX = currentX;
                 borderCenterZ = currentZ;
-                compassTargetX = xLoc2;
-                compassTargetZ = zLoc2;
-                utilManager.updateCompass(new Location(world, compassTargetX, 0, compassTargetZ)); // Update compass to final destination during shrink
+                compassTargetX = currentX;
+                compassTargetZ = currentZ;
+                utilManager.updateCompass(new Location(world, compassTargetX, 0, compassTargetZ)); // Update compass to current center during shrink
             }
         }.runTaskTimer(BattleRoyale.getPlugin(BattleRoyale.class), 1L, 1L);
     }
@@ -347,7 +347,8 @@ public class BorderManager {
             if (remainingTicks > 0) {
                 long minutes = remainingTicks / (20 * 60);
                 long seconds = (remainingTicks / 20) % 60;
-                title = String.format("§e다음 보급까지: %02d분 %02d초", minutes, seconds);
+                String distanceRange = utilManager.getSupplyDropDistanceRange(player);
+                title = String.format("§e다음 보급까지: %02d분 %02d초 §7| §a%s", minutes, seconds, distanceRange);
                 progress = (double) remainingTicks / utilManager.getSupplyDropTotalTicks();
             } else {
                 title = "§a보급품 대기 중...";

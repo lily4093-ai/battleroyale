@@ -11,6 +11,7 @@ import org.bukkit.Location;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
@@ -50,7 +51,7 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabExecu
     public void onEnable() {
         // Save default config if it doesn't exist
         saveDefaultConfig();
-        
+
         getLogger().info("BattleRoyale Plugin Enabled!");
 
         // Register events
@@ -288,6 +289,11 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabExecu
     @EventHandler
     public void onPlayerRespawn(PlayerRespawnEvent event) {
         Player player = event.getPlayer();
+
+        double maxHealth = getConfig().getDouble("game.max_health", 40.0);
+        player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).setBaseValue(maxHealth);
+        player.setHealth(maxHealth);
+
         if (GameManager.isIngame() && deadPlayers.contains(player.getUniqueId())) {
             Bukkit.getScheduler().runTaskLater(this, () -> {
                 player.setGameMode(GameMode.SPECTATOR);
@@ -298,11 +304,15 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabExecu
         }
     }
 
+
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         borderManager.addPlayerToBossBar(player);
-        player.setHealth(player.getMaxHealth());
+
+        double maxHealth = getConfig().getDouble("game.max_health", 40.0);
+        player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).setBaseValue(maxHealth);
+        player.setHealth(maxHealth);
         player.setFoodLevel(20);
         player.setSaturation(20);
 
@@ -368,6 +378,21 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabExecu
         } else if (type == Material.GOLD_ORE) {
             event.setDropItems(false);
             event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.GOLD_INGOT, 1));
+        }
+    }
+
+    @EventHandler
+    public void onEntityDamage(EntityDamageEvent event) {
+        if (!GameManager.isIngame()) {
+            return;
+        }
+
+        if (event.getEntity() instanceof Player) {
+            Player player = (Player) event.getEntity();
+            if (player.getGameMode() != GameMode.SPECTATOR && !deadPlayers.contains(player.getUniqueId())) {
+                double damageMultiplier = getConfig().getDouble("game.damage_multiplier", 1.0);
+                event.setDamage(event.getDamage() * damageMultiplier);
+            }
         }
     }
 }

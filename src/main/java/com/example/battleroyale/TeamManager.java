@@ -8,6 +8,7 @@ import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 import org.bukkit.GameMode;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.ChatColor;
 import java.util.logging.Logger;
 
 import java.util.ArrayList;
@@ -66,6 +67,7 @@ public class TeamManager implements org.bukkit.command.CommandExecutor {
                 if (team == null) {
                     team = scoreboard.registerNewTeam(teamName);
                     team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.NEVER);
+                    team.setColor(getTeamColor(i + 1));
                 }
             }
 
@@ -103,6 +105,7 @@ public class TeamManager implements org.bukkit.command.CommandExecutor {
                 if (team == null) {
                     team = scoreboard.registerNewTeam(teamName);
                     team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.NEVER);
+                    team.setColor(getTeamColor(teamNumber));
                 }
                 for (Player player : entry.getValue()) {
                     team.addEntry(player.getName());
@@ -159,6 +162,7 @@ public class TeamManager implements org.bukkit.command.CommandExecutor {
         if (team == null) {
             team = scoreboard.registerNewTeam(teamName);
             team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.NEVER);
+            team.setColor(getTeamColor(teamNumber));
         }
         team.addEntry(player.getName());
         playerTeams.put(player, teamNumber);
@@ -199,6 +203,16 @@ public class TeamManager implements org.bukkit.command.CommandExecutor {
 
     public Integer getPlayerTeamNumber(Player player) {
         return playerTeams.get(player);
+    }
+
+    private ChatColor getTeamColor(int teamNumber) {
+        switch (teamNumber) {
+            case 1: return ChatColor.RED;
+            case 2: return ChatColor.BLUE;
+            case 3: return ChatColor.GREEN;
+            case 4: return ChatColor.YELLOW;
+            default: return ChatColor.WHITE;
+        }
     }
 
     public void createTeam(String teamName) {
