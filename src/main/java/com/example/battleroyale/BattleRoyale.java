@@ -14,9 +14,11 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.block.Block;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -24,6 +26,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.command.TabExecutor;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.NamespacedKey;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -372,12 +375,83 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabExecu
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {
         Material type = event.getBlock().getType();
-        if (type == Material.IRON_ORE) {
+        Player player = event.getPlayer();
+        ItemStack tool = player.getInventory().getItemInMainHand();
+
+        int fortuneLevel = 0;
+        if (tool != null && tool.hasItemMeta()) {
+            Enchantment fortune = Enchantment.getByKey(NamespacedKey.minecraft("fortune"));
+            if (fortune != null) {
+                fortuneLevel = tool.getEnchantmentLevel(fortune);
+            }
+        }
+
+        if (type == Material.IRON_ORE || type == Material.DEEPSLATE_IRON_ORE) {
             event.setDropItems(false);
-            event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.IRON_INGOT, 1));
-        } else if (type == Material.GOLD_ORE) {
+            int amount = 1 + (fortuneLevel > 0 ? random.nextInt(fortuneLevel + 1) : 0);
+            event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.IRON_INGOT, amount));
+        } else if (type == Material.GOLD_ORE || type == Material.DEEPSLATE_GOLD_ORE) {
             event.setDropItems(false);
-            event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.GOLD_INGOT, 1));
+            int amount = 1 + (fortuneLevel > 0 ? random.nextInt(fortuneLevel + 1) : 0);
+            event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.GOLD_INGOT, amount));
+        } else if (type == Material.DIAMOND_ORE || type == Material.DEEPSLATE_DIAMOND_ORE) {
+            event.setDropItems(false);
+            int amount = 1 + (fortuneLevel > 0 ? random.nextInt(fortuneLevel + 1) : 0);
+            event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.DIAMOND, amount));
+        } else if (type == Material.EMERALD_ORE || type == Material.DEEPSLATE_EMERALD_ORE) {
+            event.setDropItems(false);
+            int amount = 1 + (fortuneLevel > 0 ? random.nextInt(fortuneLevel + 1) : 0);
+            event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.EMERALD, amount));
+        } else if (type == Material.COAL_ORE || type == Material.DEEPSLATE_COAL_ORE) {
+            event.setDropItems(false);
+            int baseAmount = 1;
+            int amount = baseAmount + (fortuneLevel > 0 ? random.nextInt(fortuneLevel + 1) : 0);
+            event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.COAL, amount));
+        } else if (type == Material.REDSTONE_ORE || type == Material.DEEPSLATE_REDSTONE_ORE) {
+            event.setDropItems(false);
+            int baseAmount = 4 + random.nextInt(2); // 4-5개
+            int amount = baseAmount + (fortuneLevel > 0 ? random.nextInt(fortuneLevel + 1) : 0);
+            event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.REDSTONE, amount));
+        } else if (type == Material.LAPIS_ORE || type == Material.DEEPSLATE_LAPIS_ORE) {
+            event.setDropItems(false);
+            int baseAmount = 4 + random.nextInt(5); // 4-8개
+            int amount = baseAmount + (fortuneLevel > 0 ? random.nextInt(fortuneLevel + 1) : 0);
+            event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.LAPIS_LAZULI, amount));
+        } else if (type == Material.COPPER_ORE || type == Material.DEEPSLATE_COPPER_ORE) {
+            event.setDropItems(false);
+            int baseAmount = 2 + random.nextInt(3); // 2-4개
+            int amount = baseAmount + (fortuneLevel > 0 ? random.nextInt(fortuneLevel + 1) : 0);
+            event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.RAW_COPPER, amount));
+        }
+    }
+
+    @EventHandler
+    public void onEntityExplode(EntityExplodeEvent event) {
+        List<Block> blocks = event.blockList();
+        for (Block block : blocks) {
+            Material type = block.getType();
+            Location loc = block.getLocation();
+
+            if (type == Material.IRON_ORE || type == Material.DEEPSLATE_IRON_ORE) {
+                block.getWorld().dropItemNaturally(loc, new ItemStack(Material.IRON_INGOT, 1));
+            } else if (type == Material.GOLD_ORE || type == Material.DEEPSLATE_GOLD_ORE) {
+                block.getWorld().dropItemNaturally(loc, new ItemStack(Material.GOLD_INGOT, 1));
+            } else if (type == Material.DIAMOND_ORE || type == Material.DEEPSLATE_DIAMOND_ORE) {
+                block.getWorld().dropItemNaturally(loc, new ItemStack(Material.DIAMOND, 1));
+            } else if (type == Material.EMERALD_ORE || type == Material.DEEPSLATE_EMERALD_ORE) {
+                block.getWorld().dropItemNaturally(loc, new ItemStack(Material.EMERALD, 1));
+            } else if (type == Material.COAL_ORE || type == Material.DEEPSLATE_COAL_ORE) {
+                block.getWorld().dropItemNaturally(loc, new ItemStack(Material.COAL, 1));
+            } else if (type == Material.REDSTONE_ORE || type == Material.DEEPSLATE_REDSTONE_ORE) {
+                int amount = 4 + random.nextInt(2); // 4-5개
+                block.getWorld().dropItemNaturally(loc, new ItemStack(Material.REDSTONE, amount));
+            } else if (type == Material.LAPIS_ORE || type == Material.DEEPSLATE_LAPIS_ORE) {
+                int amount = 4 + random.nextInt(5); // 4-8개
+                block.getWorld().dropItemNaturally(loc, new ItemStack(Material.LAPIS_LAZULI, amount));
+            } else if (type == Material.COPPER_ORE || type == Material.DEEPSLATE_COPPER_ORE) {
+                int amount = 2 + random.nextInt(3); // 2-4개
+                block.getWorld().dropItemNaturally(loc, new ItemStack(Material.RAW_COPPER, amount));
+            }
         }
     }
 
