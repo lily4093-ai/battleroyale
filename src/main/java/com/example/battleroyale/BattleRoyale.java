@@ -42,6 +42,7 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabExecu
     private BorderManager borderManager;
     private GameManager gameManager;
     private UtilManager utilManager;
+    private DownedManager downedManager;
     private List<ItemStack> defaultItems = new ArrayList<>();
     private Random random = new Random();
     private Set<UUID> deadPlayers = new HashSet<>();
@@ -61,8 +62,13 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabExecu
         utilManager = new UtilManager(this, getConfig());
         borderManager = new BorderManager(this, utilManager, getConfig());
         teamManager = new TeamManager(this, borderManager, getConfig(), deadPlayers);
-        gameManager = new GameManager(this, borderManager, teamManager, utilManager, getConfig());
+        downedManager = new DownedManager(this, teamManager, deadPlayers);
+        teamManager.setDownedManager(downedManager); // 순환 참조 설정
+        gameManager = new GameManager(this, borderManager, teamManager, utilManager, getConfig(), downedManager);
         utilManager.setBorderManager(borderManager); // Set BorderManager in UtilManager
+
+        // Register DownedManager events
+        getServer().getPluginManager().registerEvents(downedManager, this);
 
         // Load default items from config
         loadDefaultItems();
@@ -237,48 +243,47 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabExecu
         }
 
         Player victim = event.getEntity();
-        Player killer = victim.getKiller();
 
+        // 기절 시스템에서 처리하므로 여기서는 아이템 드롭만 처리
+        // (실제로는 EntityDamageEvent에서 기절로 전환되므로 이 이벤트는 거의 발생하지 않음)
         event.setDeathMessage(null);
-        logger.info("Player " + victim.getName() + " died.");
 
-        deadPlayers.add(victim.getUniqueId());
+        // 기절 상태가 아닌데 죽었다면 (버그 또는 특수 상황)
+        if (!downedManager.isDowned(victim)) {
+            logger.info("Player " + victim.getName() + " died without being downed first.");
+            deadPlayers.add(victim.getUniqueId());
 
-        String killMessage;
-        if (killer != null) {
-            logger.info("Killer is " + killer.getName());
-            Location killerLoc = killer.getLocation();
-            Location playerLoc = victim.getLocation();
-            double distance = playerLoc.distance(killerLoc);
+            Player killer = victim.getKiller();
+            String killMessage;
+            if (killer != null) {
+                Location killerLoc = killer.getLocation();
+                Location playerLoc = victim.getLocation();
+                double distance = playerLoc.distance(killerLoc);
 
-            Integer killerTeam = teamManager.getPlayerTeamNumber(killer);
-            Integer victimTeam = teamManager.getPlayerTeamNumber(victim);
+                Integer killerTeam = teamManager.getPlayerTeamNumber(killer);
+                Integer victimTeam = teamManager.getPlayerTeamNumber(victim);
 
-            String killerTeamStr = (killerTeam != null) ? "§b[TEAM " + killerTeam + "] §f" : "";
-            String victimTeamStr = (victimTeam != null) ? "§c[TEAM " + victimTeam + "] §f" : "";
+                String killerTeamStr = (killerTeam != null) ? "§b[TEAM " + killerTeam + "] §f" : "";
+                String victimTeamStr = (victimTeam != null) ? "§c[TEAM " + victimTeam + "] §f" : "";
 
-            killMessage = String.format("§6[배틀로얄] %s%s §f▶ %s%s (§e%.0fm§f)",
-                    killerTeamStr, killer.getName(), victimTeamStr, victim.getName(), distance);
+                killMessage = String.format("§6[배틀로얄] %s%s §f▶ %s%s (§e%.0fm§f)",
+                        killerTeamStr, killer.getName(), victimTeamStr, victim.getName(), distance);
+            } else {
+                killMessage = String.format("§6[배틀로얄] §c%s §f님이 사망했습니다.", victim.getName());
+            }
             Bukkit.broadcastMessage(killMessage);
-            logger.info("Broadcasted kill message: " + killMessage);
-        } else {
-            killMessage = String.format("§6[배틀로얄] §c%s §f님이 사망했습니다.", victim.getName());
-            Bukkit.broadcastMessage(killMessage);
-            logger.info("Broadcasted death message: " + killMessage);
+
+            Bukkit.getScheduler().runTaskLater(this, () -> {
+                Integer deadPlayerTeamNumber = teamManager.getPlayerTeamNumber(victim);
+                if (deadPlayerTeamNumber != null) {
+                    if (teamManager.isTeamEliminated(deadPlayerTeamNumber)) {
+                        Bukkit.broadcastMessage("§6[배틀로얄] §c" + deadPlayerTeamNumber + " 팀이 전멸했습니다!");
+                        checkGameEnd();
+                    }
+                }
+            }, 5L);
         }
 
-        Bukkit.getScheduler().runTaskLater(this, () -> {
-            Integer deadPlayerTeamNumber = teamManager.getPlayerTeamNumber(victim);
-            logger.info("Victim's team number: " + deadPlayerTeamNumber);
-            if (deadPlayerTeamNumber != null) {
-                if (teamManager.isTeamEliminated(deadPlayerTeamNumber)) {
-                    Bukkit.broadcastMessage("§6[배틀로얄] §c" + deadPlayerTeamNumber + " 팀이 전멸했습니다!");
-                    logger.info("Team " + deadPlayerTeamNumber + " eliminated. Checking game end.");
-                    checkGameEnd();
-                }
-            }
-        }, 5L);
-        
         Bukkit.getScheduler().runTaskLater(this, () -> {
             if (victim.isDead()) {
                 victim.spigot().respawn();
@@ -381,7 +386,7 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabExecu
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = org.bukkit.event.EventPriority.HIGH)
     public void onEntityDamage(EntityDamageEvent event) {
         if (!GameManager.isIngame()) {
             return;
@@ -390,8 +395,20 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabExecu
         if (event.getEntity() instanceof Player) {
             Player player = (Player) event.getEntity();
             if (player.getGameMode() != GameMode.SPECTATOR && !deadPlayers.contains(player.getUniqueId())) {
+                // 기절 상태인 플레이어는 DownedManager에서 처리
+                if (downedManager.isDowned(player)) {
+                    return;
+                }
+
                 double damageMultiplier = getConfig().getDouble("game.damage_multiplier", 1.0);
-                event.setDamage(event.getDamage() * damageMultiplier);
+                double finalDamage = event.getDamage() * damageMultiplier;
+                event.setDamage(finalDamage);
+
+                // 치명적인 데미지를 받을 경우 기절 상태로 전환
+                if (player.getHealth() - finalDamage <= 0) {
+                    event.setCancelled(true);
+                    downedManager.downPlayer(player);
+                }
             }
         }
     }

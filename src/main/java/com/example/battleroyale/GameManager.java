@@ -19,17 +19,19 @@ public class GameManager {
     private BorderManager borderManager;
     private TeamManager teamManager;
     private UtilManager utilManager;
+    private DownedManager downedManager;
     private FileConfiguration config;
     private final Logger logger;
     private World world;
 
     private BattleRoyale plugin; // Add plugin field
 
-    public GameManager(BattleRoyale plugin, BorderManager borderManager, TeamManager teamManager, UtilManager utilManager, FileConfiguration config) {
+    public GameManager(BattleRoyale plugin, BorderManager borderManager, TeamManager teamManager, UtilManager utilManager, FileConfiguration config, DownedManager downedManager) {
         this.plugin = plugin;
         this.borderManager = borderManager;
         this.teamManager = teamManager;
         this.utilManager = utilManager;
+        this.downedManager = downedManager;
         this.config = config;
         this.logger = Logger.getLogger("BattleRoyale");
         this.world = Bukkit.getWorlds().get(0); // Initialize world
@@ -49,6 +51,7 @@ public class GameManager {
         Bukkit.broadcastMessage(startMessage);
 
         setIngame(true);
+        downedManager.clearAll(); // 기절 상태 초기화
         borderManager.brBorderinit();
         utilManager.updateCompass(new Location(world, borderManager.getBorderCenterX(), 0, borderManager.getBorderCenterZ()));
         utilManager.initializeFirstSupplyDrop();

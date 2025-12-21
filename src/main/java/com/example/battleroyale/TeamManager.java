@@ -31,6 +31,7 @@ public class TeamManager implements org.bukkit.command.CommandExecutor {
     private FileConfiguration config;
     private final Logger logger;
     private Set<UUID> deadPlayers;
+    private DownedManager downedManager;
 
     public TeamManager(BattleRoyale plugin, BorderManager borderManager, FileConfiguration config, Set<UUID> deadPlayers) {
         this.scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
@@ -38,6 +39,10 @@ public class TeamManager implements org.bukkit.command.CommandExecutor {
         this.config = config;
         this.logger = Logger.getLogger("BattleRoyale");
         this.deadPlayers = deadPlayers;
+    }
+
+    public void setDownedManager(DownedManager downedManager) {
+        this.downedManager = downedManager;
     }
 
     public void splitTeam(int size) {
@@ -192,13 +197,15 @@ public class TeamManager implements org.bukkit.command.CommandExecutor {
         for (Player player : teamMembers) {
             // 온라인 상태이고, 관전 모드가 아니며, deadPlayers 목록에 없는 플레이어가 한 명이라도 있으면
             // 해당 팀은 아직 살아있는 것입니다.
+            // 기절 상태인 플레이어도 살아있는 것으로 취급 (소생 가능하므로)
             if (player.isOnline() && player.getGameMode() != GameMode.SPECTATOR && !deadPlayers.contains(player.getUniqueId())) {
-                return false; 
+                // 기절 상태여도 살아있는 것으로 취급
+                return false;
             }
         }
 
         // 위의 조건을 만족하는 살아있는 플레이어가 없으면 팀은 전멸한 것입니다.
-        return true; 
+        return true;
     }
 
     public Integer getPlayerTeamNumber(Player player) {
