@@ -1,0 +1,32 @@
+# Battle Royale Plugin Configuration
+
+# Border Settings
+border:
+  sizes: [2500, 2000, 1500, 1000, 500, 100, 10, 0]
+  countdown_times: [400, 250, 150, 100, 60, 60, 60]
+  speed: [1.0, 1.4, 1.6, 1.8, 2.0, 2.5]
+
+# Supply Drop Settings
+supply_drop:
+  interval_minutes: 4 # How often supply drops spawn in minutes
+  items:
+    - 'BLAZE_ROD:1-5'
+    - 'NETHERITE_INGOT:1-2'
+    - 'QUARTZ:5-10'
+    - 'GLOWSTONE_DUST:5-8'
+    - 'IRON_INGOT:64'
+    - 'IRON_INGOT:32-64'
+    - 'GOLD_INGOT:10-30'
+
+# Game Settings
+game:
+  min_players_per_team: 2 # Minimum players required per team for a warning
+  damage_multiplier: 1.0 # Damage multiplier (0.25 = 25% damage, 0.5 = 50% damage, 1.0 = 100% damage, 2.0 = 200% damage)
+  max_health: 40.0 # Player max health (20.0 = 10 hearts, 40.0 = 20 hearts)
+
+default_items:
+  - 'DIAMOND_PICKAXE:1:EFFICIENCY=3,UNBREAKING=3'
+  - 'DIAMOND_AXE:1:EFFICIENCY=3,UNBREAKING=3'
+  - 'BREAD:64'
+  - 'ENCHANTING_TABLE:1'
+  - 'BOOKSHELF:64'

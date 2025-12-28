@@ -155,8 +155,8 @@ public class DownedManager implements Listener {
         // 수영 포즈로 만들기 위해 Swimming 상태 설정
         player.setSwimming(true);
 
-        // 글로우 효과 (팀원이 찾기 쉽게)
-        player.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, Integer.MAX_VALUE, 0, false, false, false));
+        // 1초간 무적 (연사로 바로 처형당하는 것 방지)
+        player.addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 20, 4, false, false, true)); // 저항 5 = 무적
     }
 
     /**
@@ -165,7 +165,7 @@ public class DownedManager implements Listener {
     private void removeDownedEffects(Player player) {
         player.removePotionEffect(PotionEffectType.SLOW);
         player.removePotionEffect(PotionEffectType.BLINDNESS);
-        player.removePotionEffect(PotionEffectType.GLOWING);
+        player.removePotionEffect(PotionEffectType.DAMAGE_RESISTANCE);
         player.setSwimming(false);
     }
 
