@@ -17,8 +17,10 @@ import java.util.logging.Logger;
 import org.bukkit.Material;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 import java.util.List;
 
@@ -38,6 +40,7 @@ public class BorderManager {
     private boolean isShrinking = false;
     private List<Double> borderSpeed;
     private final Map<UUID, BossBar> playerBossBars = new HashMap<>();
+    private final Set<UUID> playersWarnedOutsideBorder = new HashSet<>(); // 자기장 밖 경고 받은 플레이어
     private int currentPhase;
     
     // 타이머 관련 변수들
@@ -170,8 +173,22 @@ public class BorderManager {
                 if (loopNumber % 60 == 0) {
                     for (Player player : Bukkit.getOnlinePlayers()) {
                         if (player.isOnline()) {
-                            if (!brIsinCurrentBorder(player.getLocation().getX(), player.getLocation().getZ())) {
-                                player.sendTitle("§c§l위험!", "§4§l[!] 자기장 안으로 진입해야 합니다!", 10, 40, 10);
+                            boolean isOutsideBorder = !brIsinCurrentBorder(player.getLocation().getX(), player.getLocation().getZ());
+                            boolean hasCompass = player.getInventory().getItemInMainHand().getType() == Material.COMPASS;
+
+                            if (isOutsideBorder) {
+                                if (hasCompass) {
+                                    // 나침반 들고 있으면 항상 표시
+                                    player.sendTitle("§c§l위험!", "§4§l[!] 자기장 안으로 진입해야 합니다!", 10, 40, 10);
+                                    playersWarnedOutsideBorder.add(player.getUniqueId());
+                                } else if (!playersWarnedOutsideBorder.contains(player.getUniqueId())) {
+                                    // 나침반 없으면 한 번만 표시
+                                    player.sendTitle("§c§l위험!", "§4§l[!] 자기장 안으로 진입해야 합니다!", 10, 40, 10);
+                                    playersWarnedOutsideBorder.add(player.getUniqueId());
+                                }
+                            } else {
+                                // 자기장 안으로 들어오면 경고 상태 초기화
+                                playersWarnedOutsideBorder.remove(player.getUniqueId());
                             }
                         }
                     }

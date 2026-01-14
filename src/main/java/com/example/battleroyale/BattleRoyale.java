@@ -315,16 +315,21 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabExecu
         Player player = event.getPlayer();
         borderManager.addPlayerToBossBar(player);
 
-        double maxHealth = getConfig().getDouble("game.max_health", 40.0);
-        player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).setBaseValue(maxHealth);
-        player.setHealth(maxHealth);
-        player.setFoodLevel(20);
-        player.setSaturation(20);
+        // Delay attribute access to ensure player is fully initialized
+        Bukkit.getScheduler().runTaskLater(this, () -> {
+            double maxHealth = getConfig().getDouble("game.max_health", 40.0);
+            if (player.isOnline() && player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH) != null) {
+                player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).setBaseValue(maxHealth);
+                player.setHealth(maxHealth);
+                player.setFoodLevel(20);
+                player.setSaturation(20);
+            }
 
-        if (GameManager.isIngame() && deadPlayers.contains(player.getUniqueId())) {
-            player.setGameMode(GameMode.SPECTATOR);
-            player.sendMessage("§6[배틀로얄] §f당신은 이전에 사망하여 관전 모드로 접속했습니다.");
-        }
+            if (GameManager.isIngame() && deadPlayers.contains(player.getUniqueId())) {
+                player.setGameMode(GameMode.SPECTATOR);
+                player.sendMessage("§6[배틀로얄] §f당신은 이전에 사망하여 관전 모드로 접속했습니다.");
+            }
+        }, 1L);
     }
 
     @EventHandler

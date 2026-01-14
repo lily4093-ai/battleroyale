@@ -63,6 +63,7 @@ public class GameManager {
                 player.getInventory().clear();
                 player.addPotionEffect(new PotionEffect(PotionEffectType.NIGHT_VISION, Integer.MAX_VALUE, 0, false, false));
                 player.addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 6000, 4)); // Resistance 5 for 5 minutes (initial invincibility)
+                scheduleResistanceCountdown(player);
 
                 player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).setBaseValue(maxHealth);
                 player.setHealth(maxHealth);
@@ -82,6 +83,38 @@ public class GameManager {
             teamManager.teamTP(teamSize);
         }
         logger.info("Battle Royale game initialized in " + mode + " mode with " + teamSize + " teams.");
+    }
+
+    private void scheduleResistanceCountdown(Player player) {
+        // 6000 ticks = 300 seconds (5 minutes)
+        // 10초 전 경고: 6000 - 200 = 5800 ticks (290초 후)
+        int warningTicks = 5800; // 290초 후 (10초 전)
+
+        // 10초 전 경고
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (isIngame && player.isOnline() && player.getGameMode() != GameMode.SPECTATOR) {
+                player.sendMessage("§c§l[배틀로얄] §e10초 후 저항이 풀립니다!");
+            }
+        }, warningTicks);
+
+        // 3, 2, 1 카운트다운
+        for (int i = 3; i >= 1; i--) {
+            final int count = i;
+            // 5800 + (10-count)*20 = 5800, 5940, 5960, 5980 for 10, 3, 2, 1
+            int countdownTicks = 6000 - (count * 20); // 3초전=5940, 2초전=5960, 1초전=5980
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                if (isIngame && player.isOnline() && player.getGameMode() != GameMode.SPECTATOR) {
+                    player.sendMessage("§c§l[배틀로얄] §f저항 해제까지 §c" + count + "§f초!");
+                }
+            }, countdownTicks);
+        }
+
+        // 저항 풀림 알림
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (isIngame && player.isOnline() && player.getGameMode() != GameMode.SPECTATOR) {
+                player.sendMessage("§c§l[배틀로얄] §4저항이 풀렸습니다! 전투 시작!");
+            }
+        }, 6000);
     }
 
     public static void setIngame(boolean ingame) {

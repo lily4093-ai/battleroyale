@@ -6,7 +6,7 @@
 
     <groupId>com.example</groupId>
     <artifactId>battleroyale</artifactId>
-    <version>1.9.0</version>
+    <version>1.9.0hotfix</version>
     <packaging>jar</packaging>
 
     <name>BattleRoyale</name>
