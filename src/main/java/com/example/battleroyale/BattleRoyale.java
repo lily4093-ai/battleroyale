@@ -391,7 +391,7 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabExecu
         }
     }
 
-    @EventHandler(priority = org.bukkit.event.EventPriority.HIGH)
+    @EventHandler(priority = org.bukkit.event.EventPriority.HIGHEST)
     public void onEntityDamage(EntityDamageEvent event) {
         if (!GameManager.isIngame()) {
             return;
@@ -406,8 +406,7 @@ public final class BattleRoyale extends JavaPlugin implements Listener, TabExecu
                 }
 
                 double damageMultiplier = getConfig().getDouble("game.damage_multiplier", 1.0);
-                double finalDamage = event.getDamage() * damageMultiplier;
-                event.setDamage(finalDamage);
+                double finalDamage = event.getFinalDamage() * damageMultiplier;
 
                 // 치명적인 데미지를 받을 경우 기절 상태로 전환
                 if (player.getHealth() - finalDamage <= 0) {
