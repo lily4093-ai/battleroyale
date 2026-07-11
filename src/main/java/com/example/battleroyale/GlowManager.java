@@ -3,12 +3,14 @@ package com.example.battleroyale;
 import com.example.battleroyale.util.TickScheduler;
 import net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket;
 import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.GameType;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.List;
 
 /**
@@ -36,16 +38,34 @@ public class GlowManager {
     private static final byte FLAG_GLOWING = 0x40;
     private static final byte FLAG_FALL_FLYING = (byte) 0x80;
 
+    // Looked up by type (the one static EntityDataAccessor<Byte> field on Entity), not by
+    // name: a production Forge server jar doesn't necessarily expose Mojang-mapped field
+    // names via reflection the way the ForgeGradle dev environment does, so a hardcoded
+    // "DATA_SHARED_FLAGS_ID" lookup that works at compile/dev time can still throw
+    // NoSuchFieldException at real dedicated-server runtime.
     static {
-        try {
-            Field field = Entity.class.getDeclaredField("DATA_SHARED_FLAGS_ID");
-            field.setAccessible(true);
-            @SuppressWarnings("unchecked")
-            EntityDataAccessor<Byte> accessor = (EntityDataAccessor<Byte>) field.get(null);
-            SHARED_FLAGS = accessor;
-        } catch (ReflectiveOperationException e) {
-            throw new RuntimeException("Failed to access Entity.DATA_SHARED_FLAGS_ID for GlowManager", e);
+        EntityDataAccessor<Byte> found = null;
+        for (Field field : Entity.class.getDeclaredFields()) {
+            if (!Modifier.isStatic(field.getModifiers()) || !EntityDataAccessor.class.equals(field.getType())) {
+                continue;
+            }
+            try {
+                field.setAccessible(true);
+                EntityDataAccessor<?> accessor = (EntityDataAccessor<?>) field.get(null);
+                if (accessor.getSerializer() == EntityDataSerializers.BYTE) {
+                    @SuppressWarnings("unchecked")
+                    EntityDataAccessor<Byte> byteAccessor = (EntityDataAccessor<Byte>) accessor;
+                    found = byteAccessor;
+                    break;
+                }
+            } catch (ReflectiveOperationException ignored) {
+                // keep scanning other fields
+            }
         }
+        if (found == null) {
+            throw new RuntimeException("Could not locate Entity's shared-flags EntityDataAccessor<Byte> for GlowManager");
+        }
+        SHARED_FLAGS = found;
     }
 
     private final BattleRoyaleMod mod;
