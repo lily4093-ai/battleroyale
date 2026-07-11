@@ -112,15 +112,23 @@ public class DownedManager {
         return new FrozenInventory(items, armor, inv.offhand.get(0).copy(), inv.selected);
     }
 
+    // Only writes back slots that actually drifted from the snapshot, so a downed
+    // player's inventory isn't re-synced to the client 20 times a second for nothing.
     private void restoreFrozen(ServerPlayer player, FrozenInventory frozen) {
         var inv = player.getInventory();
         for (int i = 0; i < frozen.items().length && i < inv.items.size(); i++) {
-            inv.items.set(i, frozen.items()[i].copy());
+            if (!ItemStack.matches(inv.items.get(i), frozen.items()[i])) {
+                inv.items.set(i, frozen.items()[i].copy());
+            }
         }
         for (int i = 0; i < frozen.armor().length && i < inv.armor.size(); i++) {
-            inv.armor.set(i, frozen.armor()[i].copy());
+            if (!ItemStack.matches(inv.armor.get(i), frozen.armor()[i])) {
+                inv.armor.set(i, frozen.armor()[i].copy());
+            }
         }
-        inv.offhand.set(0, frozen.offhand().copy());
+        if (!ItemStack.matches(inv.offhand.get(0), frozen.offhand())) {
+            inv.offhand.set(0, frozen.offhand().copy());
+        }
         inv.selected = frozen.selected();
     }
 

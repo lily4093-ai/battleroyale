@@ -54,6 +54,7 @@ public class BattleRoyaleMod {
     private GameManager gameManager;
     private UtilManager utilManager;
     private DownedManager downedManager;
+    private GlowManager glowManager;
 
     private final List<ItemStack> defaultItems = new ArrayList<>();
     private final Set<UUID> deadPlayers = new HashSet<>();
@@ -80,6 +81,7 @@ public class BattleRoyaleMod {
         this.downedManager = new DownedManager(this, teamManager, deadPlayers);
         this.gameManager = new GameManager(this, borderManager, teamManager, downedManager);
         this.utilManager.setBorderManager(borderManager);
+        this.glowManager = new GlowManager(this);
 
         MinecraftForge.EVENT_BUS.register(utilManager);
         MinecraftForge.EVENT_BUS.register(downedManager);
@@ -309,6 +311,10 @@ public class BattleRoyaleMod {
 
     public DownedManager getDownedManager() {
         return downedManager;
+    }
+
+    public GlowManager getGlowManager() {
+        return glowManager;
     }
 
     public List<ItemStack> getDefaultItems() {
