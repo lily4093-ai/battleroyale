@@ -45,6 +45,10 @@ public class DownedManager {
     private static final int DOWNED_TIMEOUT_SECONDS = 60;
     private static final double REVIVE_DISTANCE = 1.5;
     private static final double REVIVE_HEALTH = 5.0;
+    // Grace period right after going down during which an enemy can't execute the player -
+    // otherwise a downed player who's immediately hit again (e.g. by the same burst of
+    // gunfire that downed them) would die instantly, defeating the point of the mechanic.
+    private static final long EXECUTION_GRACE_PERIOD_MS = 1500;
 
     private TickScheduler.TaskHandle reviveCheckTask;
 
@@ -410,6 +414,10 @@ public class DownedManager {
                 if (attackerTeam != null && attackerTeam.equals(victimTeam)) {
                     BRText.send(attacker, "§c팀원은 처형할 수 없습니다!");
                     return;
+                }
+                long downedSince = downedPlayers.getOrDefault(victim.getUUID(), 0L);
+                if (System.currentTimeMillis() - downedSince < EXECUTION_GRACE_PERIOD_MS) {
+                    return; // still within the post-down grace period - blocked, but not executed yet
                 }
                 killDownedPlayer(victim, attacker);
             } else if (event.getSource().is(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
