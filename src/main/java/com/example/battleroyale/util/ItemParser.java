@@ -39,22 +39,37 @@ public final class ItemParser {
             }
 
             String[] parts = head.split(":");
-            ResourceLocation id = new ResourceLocation(parts[0].toLowerCase(Locale.ROOT));
-            Item item = ForgeRegistries.ITEMS.getValue(id);
+
+            // Item ids may themselves contain a namespace colon (e.g. "tacz:gun_smith_table"),
+            // which otherwise collides with the ":AMOUNT:ENCHANTS" delimiters. Prefer treating
+            // the first two segments as "namespace:path" when that resolves to a real item;
+            // only fall back to a bare (implicit "minecraft:") first segment otherwise.
+            Item item = null;
+            int idSegments = 1;
+            if (parts.length >= 2) {
+                ResourceLocation namespaced = new ResourceLocation(parts[0].toLowerCase(Locale.ROOT), parts[1].toLowerCase(Locale.ROOT));
+                if (ForgeRegistries.ITEMS.containsKey(namespaced)) {
+                    item = ForgeRegistries.ITEMS.getValue(namespaced);
+                    idSegments = 2;
+                }
+            }
+            if (item == null) {
+                item = ForgeRegistries.ITEMS.getValue(new ResourceLocation(parts[0].toLowerCase(Locale.ROOT)));
+            }
             if (item == null) {
                 warn.accept("Unknown item id in config: " + itemString);
                 return null;
             }
 
             int amount;
-            if (parts.length > 1 && !parts[1].isEmpty()) {
-                String[] amountParts = parts[1].split("-");
+            if (parts.length > idSegments && !parts[idSegments].isEmpty()) {
+                String[] amountParts = parts[idSegments].split("-");
                 if (amountParts.length == 2) {
                     int min = Integer.parseInt(amountParts[0]);
                     int max = Integer.parseInt(amountParts[1]);
                     amount = random.nextInt(max - min + 1) + min;
                 } else {
-                    amount = Integer.parseInt(parts[1]);
+                    amount = Integer.parseInt(parts[idSegments]);
                 }
             } else {
                 amount = 1;
@@ -69,8 +84,8 @@ public final class ItemParser {
                 } catch (CommandSyntaxException e) {
                     warn.accept("Invalid NBT in config: " + itemString + " - " + e.getMessage());
                 }
-            } else if (parts.length > 2) {
-                String[] enchantments = parts[2].split(",");
+            } else if (parts.length > idSegments + 1) {
+                String[] enchantments = parts[idSegments + 1].split(",");
                 for (String enchantmentString : enchantments) {
                     String[] enchantmentParts = enchantmentString.split("=");
                     if (enchantmentParts.length == 2) {
