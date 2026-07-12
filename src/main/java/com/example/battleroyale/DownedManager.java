@@ -10,6 +10,7 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameType;
+import net.minecraft.tags.DamageTypeTags;
 import net.minecraftforge.event.entity.item.ItemTossEvent;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.living.LivingKnockBackEvent;
@@ -41,7 +42,7 @@ public class DownedManager {
     private final Map<UUID, FrozenInventory> frozenInventories = new HashMap<>();
 
     private static final int REVIVE_TIME_TICKS = 200;
-    private static final int DOWNED_TIMEOUT_SECONDS = 100;
+    private static final int DOWNED_TIMEOUT_SECONDS = 60;
     private static final double REVIVE_DISTANCE = 1.5;
     private static final double REVIVE_HEALTH = 5.0;
 
@@ -398,7 +399,11 @@ public class DownedManager {
         if (!(event.getEntity() instanceof ServerPlayer victim)) return;
 
         if (downedPlayers.containsKey(victim.getUUID())) {
+            // Always cancel the vanilla hurt sequence itself - even when we go on to kill
+            // the player below, we do that through our own killDownedPlayer() bookkeeping
+            // (timers, frozen inventory, team-elimination checks), not vanilla's death path.
             event.setCanceled(true);
+
             if (event.getSource().getEntity() instanceof ServerPlayer attacker) {
                 Integer attackerTeam = teamManager.getPlayerTeamNumber(attacker);
                 Integer victimTeam = teamManager.getPlayerTeamNumber(victim);
@@ -407,6 +412,10 @@ public class DownedManager {
                     return;
                 }
                 killDownedPlayer(victim, attacker);
+            } else if (event.getSource().is(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
+                // /kill and similar admin/testing damage can still finish off a downed
+                // player, even though ordinary combat/environmental damage is blocked.
+                killDownedPlayer(victim, null);
             }
             return;
         }
