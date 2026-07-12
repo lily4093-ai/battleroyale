@@ -1,5 +1,8 @@
 package com.example.battleroyale.util;
 
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.TagParser;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -12,9 +15,14 @@ import java.util.function.Consumer;
 
 /**
  * Parses config item strings of the form "ITEM_ID:AMOUNT_OR_RANGE:ENCHANT=LEVEL,ENCHANT=LEVEL"
- * e.g. "DIAMOND_SWORD:1:SHARPNESS=5,UNBREAKING=3" or "ENDER_PEARL:4-8".
- * Mirrors the original Paper plugin's UtilManager#parseItemStack behavior, including its
- * quirk of attempting enchantment lookups even for items that aren't enchantable.
+ * e.g. "diamond_sword:1:sharpness=5,unbreaking=3" or "ender_pearl:4-8".
+ *
+ * The third segment may instead be a raw SNBT compound tag (starting with '{'), which is
+ * applied to the stack as-is via vanilla's own tag parser - e.g.
+ * "tacz:workbench_c:1:{BlockId:\"tacz:attachment_workbench\"}" or an item with a full
+ * "{Damage:0,Enchantments:[{id:\"minecraft:efficiency\",lvl:3s}]}" tag copied straight out
+ * of a /give or chest NBT. This is needed for modded items (like TACZ's workbenches) whose
+ * variant is selected by a custom NBT key rather than by a distinct item id.
  */
 public final class ItemParser {
 
@@ -23,7 +31,14 @@ public final class ItemParser {
 
     public static ItemStack parse(String itemString, Random random, Consumer<String> warn) {
         try {
-            String[] parts = itemString.split(":");
+            int nbtIndex = itemString.indexOf('{');
+            String head = nbtIndex >= 0 ? itemString.substring(0, nbtIndex) : itemString;
+            String nbtPart = nbtIndex >= 0 ? itemString.substring(nbtIndex) : null;
+            if (head.endsWith(":")) {
+                head = head.substring(0, head.length() - 1);
+            }
+
+            String[] parts = head.split(":");
             ResourceLocation id = new ResourceLocation(parts[0].toLowerCase(Locale.ROOT));
             Item item = ForgeRegistries.ITEMS.getValue(id);
             if (item == null) {
@@ -32,7 +47,7 @@ public final class ItemParser {
             }
 
             int amount;
-            if (parts.length > 1) {
+            if (parts.length > 1 && !parts[1].isEmpty()) {
                 String[] amountParts = parts[1].split("-");
                 if (amountParts.length == 2) {
                     int min = Integer.parseInt(amountParts[0]);
@@ -47,7 +62,14 @@ public final class ItemParser {
 
             ItemStack stack = new ItemStack(item, amount);
 
-            if (parts.length > 2) {
+            if (nbtPart != null) {
+                try {
+                    CompoundTag tag = TagParser.parseTag(nbtPart);
+                    stack.setTag(tag);
+                } catch (CommandSyntaxException e) {
+                    warn.accept("Invalid NBT in config: " + itemString + " - " + e.getMessage());
+                }
+            } else if (parts.length > 2) {
                 String[] enchantments = parts[2].split(",");
                 for (String enchantmentString : enchantments) {
                     String[] enchantmentParts = enchantmentString.split("=");

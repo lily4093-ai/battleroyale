@@ -70,13 +70,15 @@ public final class BRConfig {
         builder.pop();
 
         DEFAULT_ITEMS = builder
-                .comment("Items given to every player when a game starts. Format: ITEM_ID:AMOUNT:ENCHANT=LEVEL,ENCHANT=LEVEL")
+                .comment("Items given to every player when a game starts. Format: ITEM_ID:AMOUNT:ENCHANT=LEVEL,ENCHANT=LEVEL",
+                        "The 3rd segment may also be a raw NBT compound (e.g. {BlockId:\"tacz:attachment_workbench\"}) applied as-is.")
                 .defineListAllowEmpty("default_items", Arrays.asList(
-                        "diamond_sword:1:sharpness=5,unbreaking=3",
-                        "bow:1:power=4,infinity=1",
-                        "arrow:64",
-                        "cooked_beef:32",
-                        "golden_apple:5"
+                        "diamond_axe:1:{Damage:0,Enchantments:[{id:\"minecraft:efficiency\",lvl:3s},{id:\"minecraft:unbreaking\",lvl:3s}]}",
+                        "diamond_pickaxe:1:{Damage:0,Enchantments:[{id:\"minecraft:efficiency\",lvl:3s},{id:\"minecraft:unbreaking\",lvl:3s}]}",
+                        "bread:64",
+                        "tacz:gun_smith_table:1",
+                        "tacz:workbench_c:1:{BlockId:\"tacz:attachment_workbench\"}",
+                        "tacz:workbench_a:1:{BlockId:\"tacz:ammo_workbench\"}"
                 ), o -> o instanceof String);
 
         SPEC = builder.build();

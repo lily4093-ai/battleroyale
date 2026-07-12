@@ -7,10 +7,12 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Pose;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameType;
 import net.minecraftforge.event.entity.item.ItemTossEvent;
-import net.minecraftforge.event.entity.living.LivingDamageEvent;
+import net.minecraftforge.event.entity.living.LivingAttackEvent;
+import net.minecraftforge.event.entity.living.LivingKnockBackEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
@@ -136,7 +138,10 @@ public class DownedManager {
         player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, Integer.MAX_VALUE, 1, false, false, true));
         player.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, Integer.MAX_VALUE, 0, false, false, false));
         player.setSwimming(true);
-        player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 20, 4, false, false, true));
+        player.setPose(Pose.SWIMMING);
+        // 1.5s of near-invincibility right when going down, on top of the LivingAttackEvent
+        // block below, so there's no jarring instant-death window during the transition.
+        player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 30, 4, false, false, true));
     }
 
     private void removeDownedEffects(ServerPlayer player) {
@@ -272,7 +277,20 @@ public class DownedManager {
             for (UUID uuid : new ArrayList<>(downedPlayers.keySet())) {
                 ServerPlayer p = mod.getServer().getPlayerList().getPlayer(uuid);
                 if (p == null) continue;
+
+                // Re-assert every tick: vanilla's own movement/food logic fights both of
+                // these (swim pose gets reset once the entity isn't actually in a fluid,
+                // and natural regen from high saturation slowly heals the pinned 1 HP
+                // back up), so a one-time set at down-time isn't enough.
                 if (!p.isSwimming()) p.setSwimming(true);
+                if (p.getPose() != Pose.SWIMMING) p.setPose(Pose.SWIMMING);
+                if (p.getHealth() != 1.0f) p.setHealth(1.0f);
+
+                if (mod.getServer().getTickCount() % 10 == 0) {
+                    ((net.minecraft.server.level.ServerLevel) p.level()).sendParticles(ParticleTypes.SMOKE,
+                            p.getX(), p.getY() + 0.2, p.getZ(), 2, 0.2, 0.05, 0.2, 0.01);
+                }
+
                 FrozenInventory frozen = frozenInventories.get(uuid);
                 if (frozen != null) restoreFrozen(p, frozen);
             }
@@ -369,24 +387,49 @@ public class DownedManager {
         }
     }
 
-    // Must run before BREvents' fatal-damage -> downed transition handler (which uses a
-    // lower priority), so this always observes the player's downed state from *before*
-    // the current damage event, exactly like the original plugin's Bukkit HIGH/HIGHEST order.
+    // LivingAttackEvent fires at the very start of the hurt sequence - before knockback,
+    // hit sound/animation and damage are applied - so cancelling it here (rather than the
+    // later LivingDamageEvent) stops a downed player from visibly flinching/getting pushed
+    // by hits that deal no damage. It also runs before BattleRoyaleMod's fatal-damage ->
+    // downed transition handler (lower priority), so that handler never even sees an event
+    // for a player who's already downed.
     @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public void onLivingDamage(LivingDamageEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        if (!downedPlayers.containsKey(player.getUUID())) return;
+    public void onLivingAttack(LivingAttackEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer victim)) return;
 
-        event.setCanceled(true);
-
-        if (event.getSource().getEntity() instanceof ServerPlayer attacker) {
-            Integer attackerTeam = teamManager.getPlayerTeamNumber(attacker);
-            Integer victimTeam = teamManager.getPlayerTeamNumber(player);
-            if (attackerTeam != null && attackerTeam.equals(victimTeam)) {
-                BRText.send(attacker, "§c팀원은 처형할 수 없습니다!");
-                return;
+        if (downedPlayers.containsKey(victim.getUUID())) {
+            event.setCanceled(true);
+            if (event.getSource().getEntity() instanceof ServerPlayer attacker) {
+                Integer attackerTeam = teamManager.getPlayerTeamNumber(attacker);
+                Integer victimTeam = teamManager.getPlayerTeamNumber(victim);
+                if (attackerTeam != null && attackerTeam.equals(victimTeam)) {
+                    BRText.send(attacker, "§c팀원은 처형할 수 없습니다!");
+                    return;
+                }
+                killDownedPlayer(victim, attacker);
             }
-            killDownedPlayer(player, attacker);
+            return;
+        }
+
+        // Friendly fire: block teammates from damaging each other outright (not just the
+        // downed-execution case above), matching the "same team" checks used elsewhere.
+        if (!GameManager.isIngame()) return;
+        if (event.getSource().getEntity() instanceof ServerPlayer attacker && attacker != victim) {
+            Integer attackerTeam = teamManager.getPlayerTeamNumber(attacker);
+            Integer victimTeam = teamManager.getPlayerTeamNumber(victim);
+            if (attackerTeam != null && attackerTeam.equals(victimTeam)) {
+                event.setCanceled(true);
+            }
+        }
+    }
+
+    // Melee knockback is applied by the attacker's own attack() call, separately from (and
+    // before) the hurt()/LivingAttackEvent sequence, so it needs its own cancellation to
+    // keep a downed player from being shoved around by hits that otherwise do nothing.
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public void onLivingKnockBack(LivingKnockBackEvent event) {
+        if (event.getEntity() instanceof ServerPlayer victim && downedPlayers.containsKey(victim.getUUID())) {
+            event.setCanceled(true);
         }
     }
 
